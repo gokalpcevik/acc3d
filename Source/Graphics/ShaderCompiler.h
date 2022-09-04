@@ -11,7 +11,7 @@ namespace acc3d::Graphics
 	{
 		Vertex = 0,
 		Pixel = 1,
-		InvalidShader
+		Invalid
 	};
 
 	struct ShaderCompilationEntry
@@ -30,21 +30,25 @@ namespace acc3d::Graphics
 			return { std::move(other.Blob),std::move(other.ErrorBlob),other.ShaderType};
 		}
 
-		Microsoft::WRL::ComPtr<ID3DBlob> Blob;
-		Microsoft::WRL::ComPtr<ID3DBlob> ErrorBlob;
-		acc3d::Graphics::ShaderType ShaderType;
+
+		Microsoft::WRL::ComPtr<ID3DBlob> Blob{nullptr};
+		Microsoft::WRL::ComPtr<ID3DBlob> ErrorBlob{nullptr};
+		acc3d::Graphics::ShaderType ShaderType{ShaderType::Invalid};
 		bool CompilationSucceeded = false;
 	};
 
 	struct ShaderCompilationParameters
 	{
 		LPCWSTR ShaderPath{};
-		D3D_SHADER_MACRO const* Defines = nullptr;
-		ID3DInclude* Include = D3D_COMPILE_STANDARD_FILE_INCLUDE;
+		D3D_SHADER_MACRO const* Defines{nullptr};
+		ID3DInclude* Include{ D3D_COMPILE_STANDARD_FILE_INCLUDE };
 		LPCSTR EntryPoint = "main";
 		LPCSTR Target{};
 		UINT Flags{};
-		acc3d::Graphics::ShaderType ShaderType;
+		acc3d::Graphics::ShaderType ShaderType{ ShaderType::Invalid };
+
+		static ShaderCompilationParameters Param_CompileVS_StdIncNoFlagsMainEntry(LPCWSTR ShaderPath);
+		static ShaderCompilationParameters Param_CompilePS_StdIncNoFlagsMainEntry(LPCWSTR ShaderPath);
 	};
 
 	class ShaderCompiler

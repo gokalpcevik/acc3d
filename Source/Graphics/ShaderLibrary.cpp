@@ -18,7 +18,7 @@ namespace acc3d::Graphics
             s_ShaderIdMap[id] = entry;
             return { id,entry };
         }
-        return { SHADER_COMPILATION_ENTRY_INVALID_ID, ShaderCompilationEntry{nullptr,nullptr,ShaderType::InvalidShader} };
+        return { SHADER_COMPILATION_ENTRY_INVALID_ID, ShaderCompilationEntry{nullptr,nullptr,ShaderType::Invalid} };
     }
 
     ShaderCompilationEntry const& ShaderLibrary::GetCompilationEntry(ShaderCompilationEntryId id)
