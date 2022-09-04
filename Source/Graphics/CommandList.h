@@ -1,18 +1,34 @@
-//
-// Created by GOKALP on 9/2/2022.
-//
+#pragma once
 
-#ifndef ACC3D_COMMANDLIST_H
-#define ACC3D_COMMANDLIST_H
+#include <d3d12.h>
+#include <wrl/client.h>
+#include "ResultHandler.h"
+#include "../Core/Log.h"
 
-namespace acc3d {
-namespace Graphics {
+namespace acc3d::Graphics
+{
+    /*
+     * A command list object is used to issue draw, copy, compute commands. They are not executed
+     * immediately but rather executed when they are executed on the command queue.
+     * */
 
-class CommandList {
+    class GraphicsCommandList
+    {
+    public:
+        // Type parameter must be of the same value as the CommandAllocator's command list type.
+        GraphicsCommandList(ID3D12Device *pDevice, ID3D12CommandAllocator *pAllocator,
+                            D3D12_COMMAND_LIST_TYPE type, ID3D12PipelineState *pInitialState);
 
-};
+        GraphicsCommandList(const GraphicsCommandList &) = delete;
 
-} // acc3d
+        GraphicsCommandList(GraphicsCommandList &&) = default;
+
+        void Reset(ID3D12CommandAllocator *pAllocator, ID3D12PipelineState *pPSO);
+
+        [[nodiscard]] ID3D12GraphicsCommandList *GetGraphicsCommandList() const;
+
+    private:
+        Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> m_CmdList;
+    };
+
 } // Graphics
-
-#endif //ACC3D_COMMANDLIST_H

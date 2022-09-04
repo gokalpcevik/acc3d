@@ -1,10 +1,8 @@
 #pragma once
+
 #include <cstdint>
 
-namespace acc3d
+namespace acc3d::Graphics
 {
-    namespace Graphics
-    {
-        static constexpr uint32_t g_NUM_FRAMES = 3;
-    }
+    static constexpr uint32_t g_NUM_FRAMES_IN_FLIGHT = 3;
 }

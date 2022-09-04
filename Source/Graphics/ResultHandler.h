@@ -1,18 +1,16 @@
-//
-// Created by GOKALP on 9/3/2022.
-//
+#pragma once
 
-#ifndef ACC3D_RESULTHANDLER_H
-#define ACC3D_RESULTHANDLER_H
+#include <d3d12.h>
+#include "../Core/Log.h"
 
-namespace acc3d {
-namespace Graphics {
+#define D3D_CALL(hr) ::acc3d::Graphics::ResultHandler::CheckResult((hr),__FILE__,__LINE__)
 
-class ResultHandler {
+namespace acc3d::Graphics
+{
+    class ResultHandler
+    {
+    public:
+        static void CheckResult(HRESULT hr, char const *file, unsigned int line);
+    };
+}
 
-};
-
-} // acc3d
-} // Graphics
-
-#endif //ACC3D_RESULTHANDLER_H

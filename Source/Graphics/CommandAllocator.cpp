@@ -4,7 +4,22 @@
 
 #include "CommandAllocator.h"
 
-namespace acc3d {
-namespace Graphics {
-} // acc3d
-} // Graphics
+namespace acc3d::Graphics
+{
+    CommandAllocator::CommandAllocator(ID3D12Device *pDevice, D3D12_COMMAND_LIST_TYPE type)
+    {
+        auto hr = pDevice->CreateCommandAllocator(type, IID_PPV_ARGS(&m_CmdAllocator));
+        if (!SUCCEEDED(hr))
+        {
+            acc3d_error("Command Allocator  could not be created properly.");
+            return;
+        }
+
+    }
+
+    void CommandAllocator::Reset()
+    {
+        D3D_CALL(m_CmdAllocator->Reset());
+    }
+
+}

@@ -1,18 +1,37 @@
-//
-// Created by GOKALP on 9/3/2022.
-//
+#pragma once
 
-#ifndef ACC3D_DESCRIPTORHEAP_H
-#define ACC3D_DESCRIPTORHEAP_H
+#include <d3d12.h>
+#include <wrl/client.h>
+#include "ResultHandler.h"
+#include "RendererConfiguration.h"
 
-namespace acc3d {
-namespace Graphics {
+namespace acc3d::Graphics
+{
+    struct DescriptorHeapSizeInfo
+    {
+        UINT RTVDescriptorSize = 0UL;
+        UINT DSVDescriptorSize = 0UL;
+        UINT CBV_SRV_UAVDescriptorSize = 0UL;
+        UINT SamplerDescriptorSize = 0UL;
+    };
 
-class DescriptorHeap {
+    class DescriptorHeap
+    {
+    public:
+        DescriptorHeap(ID3D12Device *pDevice, const D3D12_DESCRIPTOR_HEAP_DESC &desc);
 
-};
+        [[nodiscard]] ID3D12DescriptorHeap *GetDescriptorHeap() const
+        { return m_DescriptorHeap.Get(); }
 
-} // acc3d
+        static std::pair<std::unique_ptr<DescriptorHeap>, std::unique_ptr<DescriptorHeap>>
+        CreateDescriptorHeapsForSwapChainBuffers(ID3D12Device *pDevice);
+
+        static DescriptorHeapSizeInfo GetDescriptorHeapSizeInfo(ID3D12Device *pDevice);
+
+
+    private:
+        Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_DescriptorHeap;
+    };
+
 } // Graphics
 
-#endif //ACC3D_DESCRIPTORHEAP_H

@@ -1,18 +1,31 @@
-//
-// Created by GOKALP on 9/3/2022.
-//
+#pragma once
 
-#ifndef ACC3D_SWAPCHAIN_H
-#define ACC3D_SWAPCHAIN_H
+#include <dxgi1_6.h>
+#include <d3d12.h>
+#include <wrl/client.h>
+#include "ResultHandler.h"
+#include "Device.h"
+#include "../Core/Window.h"
+#include "RendererConfiguration.h"
 
-namespace acc3d {
-namespace Graphics {
+namespace acc3d::Graphics
+{
 
-class SwapChain {
+    class SwapChain
+    {
+    public:
+        SwapChain(IDXGIFactory3 *pDXGIFactory, ID3D12CommandQueue *pCmdQueue,
+                  Core::Window const &window, Device *pDevice);
 
-};
+        [[nodiscard]] IDXGISwapChain1 *GetDXGISwapChain() const;
 
-} // acc3d
+        [[nodiscard]] UINT GetCurrentBackBufferIndex() const;
+
+        void Present(UINT syncInterval, UINT presentFlags);
+
+    private:
+        Microsoft::WRL::ComPtr<IDXGISwapChain1> m_DXGISwapChain;
+    };
+
 } // Graphics
 
-#endif //ACC3D_SWAPCHAIN_H

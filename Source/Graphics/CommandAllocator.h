@@ -1,18 +1,24 @@
-//
-// Created by GOKALP on 9/2/2022.
-//
+#pragma once
 
-#ifndef ACC3D_COMMANDALLOCATOR_H
-#define ACC3D_COMMANDALLOCATOR_H
+#include <d3d12.h>
+#include <wrl/client.h>
+#include "ResultHandler.h"
+#include "../Core/Log.h"
 
-namespace acc3d {
-namespace Graphics {
+namespace acc3d::Graphics
+{
+    class CommandAllocator
+    {
+    public:
+        CommandAllocator(ID3D12Device *pDevice, D3D12_COMMAND_LIST_TYPE type);
 
-class CommandAllocator {
+        [[nodiscard]] ID3D12CommandAllocator *GetCommandAllocator() const
+        { return m_CmdAllocator.Get(); }
 
-};
+        void Reset();
 
-} // acc3d
+    private:
+        Microsoft::WRL::ComPtr<ID3D12CommandAllocator> m_CmdAllocator;
+    };
+
 } // Graphics
-
-#endif //ACC3D_COMMANDALLOCATOR_H
