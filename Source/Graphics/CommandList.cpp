@@ -22,13 +22,13 @@ namespace acc3d::Graphics
         // Command list is created in an open state and must be closed before it can be reset.
         if (SUCCEEDED(createResult))
         {
-            D3D_CALL(m_CmdList->Close());
+            THROW_IFF(m_CmdList->Close());
         }
     }
 
     void GraphicsCommandList::Reset(ID3D12CommandAllocator *pAllocator, ID3D12PipelineState *pPSO)
     {
-        D3D_CALL(m_CmdList->Reset(pAllocator, pPSO));
+        THROW_IFF(m_CmdList->Reset(pAllocator, pPSO));
     }
 
     ID3D12GraphicsCommandList *GraphicsCommandList::GetGraphicsCommandList() const

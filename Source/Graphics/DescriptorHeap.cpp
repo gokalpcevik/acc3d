@@ -5,7 +5,7 @@ namespace acc3d::Graphics
     DescriptorHeap::DescriptorHeap(ID3D12Device *pDevice,
                                    const D3D12_DESCRIPTOR_HEAP_DESC &desc)
     {
-        D3D_CALL(pDevice->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&m_DescriptorHeap)));
+        THROW_IFF(pDevice->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&m_DescriptorHeap)));
     }
 
     std::pair<std::unique_ptr<DescriptorHeap>, std::unique_ptr<DescriptorHeap>>

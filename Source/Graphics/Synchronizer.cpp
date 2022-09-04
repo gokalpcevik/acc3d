@@ -16,7 +16,7 @@ namespace acc3d::Graphics
 	                                          uint64_t& fenceValue)
 	{
 		uint64_t fenceValueForSignal = ++fenceValue;
-		D3D_CALL(pCmdQueue->Signal(pFence, fenceValueForSignal));
+		THROW_IFF(pCmdQueue->Signal(pFence, fenceValueForSignal));
 		return fenceValueForSignal;
 	}
 
@@ -24,7 +24,7 @@ namespace acc3d::Graphics
 	{
 		if(pFence->GetCompletedValue() < fenceValue)
 		{
-			D3D_CALL(pFence->SetEventOnCompletion(fenceValue, fenceEvent));
+			THROW_IFF(pFence->SetEventOnCompletion(fenceValue, fenceEvent));
 			::WaitForSingleObject(fenceEvent, static_cast<DWORD>(std::chrono::milliseconds::max().count()));
 		}
 	}

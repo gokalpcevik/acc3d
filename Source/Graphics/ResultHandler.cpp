@@ -22,6 +22,7 @@ namespace acc3d::Graphics
             {
                 acc3d_error("{0} \n File: {1}:{2}", errorText, file, line);
                 free(errorText);
+                throw std::exception();
             }
         }
     }

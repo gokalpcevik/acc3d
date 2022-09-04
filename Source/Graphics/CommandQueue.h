@@ -3,17 +3,12 @@
 #include <d3d12.h>
 #include <wrl/client.h>
 #include <cstdint>
-#include <intsafe.h>
-#include <queue>
 #include "CommandList.h"
 #include "CommandAllocator.h"
 #include "../Core/Log.h"
 
 namespace acc3d::Graphics
 {
-    /*
-     * For every command allocator in flight, we need to track a fence value associated with it.
-     * */
     class CommandQueue
     {
     public:

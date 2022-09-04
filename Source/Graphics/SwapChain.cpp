@@ -46,13 +46,13 @@ namespace acc3d::Graphics
     UINT SwapChain::GetCurrentBackBufferIndex() const
     {
         Microsoft::WRL::ComPtr<IDXGISwapChain3> pSwapChain3;
-        D3D_CALL(m_DXGISwapChain.As(&pSwapChain3));
+        THROW_IFF(m_DXGISwapChain.As(&pSwapChain3));
         return pSwapChain3->GetCurrentBackBufferIndex();
     }
 
     void SwapChain::Present(UINT syncInterval, UINT presentFlags) const
     {
-        D3D_CALL(m_DXGISwapChain->Present(syncInterval, presentFlags));
+        THROW_IFF(m_DXGISwapChain->Present(syncInterval, presentFlags));
     }
 
     IDXGISwapChain1 *SwapChain::GetDXGISwapChain() const

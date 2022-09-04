@@ -19,7 +19,7 @@ namespace acc3d::Graphics
 
     void CommandAllocator::Reset()
     {
-        D3D_CALL(m_CmdAllocator->Reset());
+        THROW_IFF(m_CmdAllocator->Reset());
     }
 
 }

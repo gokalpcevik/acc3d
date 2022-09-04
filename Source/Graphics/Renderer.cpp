@@ -28,7 +28,7 @@ namespace acc3d::Graphics
 		CD3DX12_RESOURCE_BARRIER RTVtoPresentBarrier = CD3DX12_RESOURCE_BARRIER::Transition(
 			backBuffer.Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
 		m_GfxCmdList->GetGraphicsCommandList()->ResourceBarrier(1UL, &RTVtoPresentBarrier);
-		D3D_CALL(m_GfxCmdList->GetGraphicsCommandList()->Close());
+		THROW_IFF(m_GfxCmdList->GetGraphicsCommandList()->Close());
 
 		ID3D12CommandList* const commandLists[] = {m_GfxCmdList->GetGraphicsCommandList()};
 		m_CmdQueue->GetD3D12CommandQueue()->ExecuteCommandLists(1UL, commandLists);
@@ -60,10 +60,9 @@ namespace acc3d::Graphics
 		for (UINT i = 0; i < g_NUM_FRAMES_IN_FLIGHT; ++i)
 		{
 			ComPtr<ID3D12Resource> pBackBuffer;
-			D3D_CALL(m_SwapChain->GetDXGISwapChain()->GetBuffer(i, IID_PPV_ARGS(&pBackBuffer)));
+			THROW_IFF(m_SwapChain->GetDXGISwapChain()->GetBuffer(i, IID_PPV_ARGS(&pBackBuffer)));
 
-			m_Device->GetD3D12Device()->CreateRenderTargetView(pBackBuffer.Get(), nullptr,
-			                                                   rtvHandle);
+			m_Device->GetD3D12Device()->CreateRenderTargetView(pBackBuffer.Get(), nullptr, rtvHandle);
 			m_BackBuffers[i] = pBackBuffer;
 			rtvHandle.Offset(static_cast<INT>(m_DescriptorHeapSizeInfo.RTVDescriptorSize));
 		}
@@ -89,8 +88,8 @@ namespace acc3d::Graphics
 		}
 		DXGI_SWAP_CHAIN_DESC swapChainDesc{};
 
-		D3D_CALL(m_SwapChain->GetDXGISwapChain()->GetDesc(&swapChainDesc));
-		D3D_CALL(m_SwapChain->GetDXGISwapChain()->ResizeBuffers(g_NUM_FRAMES_IN_FLIGHT, width, height,
+		THROW_IFF(m_SwapChain->GetDXGISwapChain()->GetDesc(&swapChainDesc));
+		THROW_IFF(m_SwapChain->GetDXGISwapChain()->ResizeBuffers(g_NUM_FRAMES_IN_FLIGHT, width, height,
 			swapChainDesc.BufferDesc.Format,
 			swapChainDesc.Flags));
 
