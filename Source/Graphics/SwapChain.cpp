@@ -50,7 +50,7 @@ namespace acc3d::Graphics
         return pSwapChain3->GetCurrentBackBufferIndex();
     }
 
-    void SwapChain::Present(UINT syncInterval, UINT presentFlags)
+    void SwapChain::Present(UINT syncInterval, UINT presentFlags) const
     {
         D3D_CALL(m_DXGISwapChain->Present(syncInterval, presentFlags));
     }

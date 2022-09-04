@@ -6,7 +6,7 @@ namespace acc3d::Graphics
     void ResultHandler::CheckResult(HRESULT hr, char const *file, unsigned int line)
     {
         if (SUCCEEDED(hr)) return;
-        if (!SUCCEEDED(hr))
+        if (FAILED(hr))
         {
             LPTSTR errorText = NULL;
             FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM |
@@ -18,12 +18,9 @@ namespace acc3d::Graphics
                           (LPTSTR) &errorText,
                           0,
                           NULL);
-            if (!SUCCEEDED(hr))
-            {
-                acc3d_error("{0} \n File: {1}:{2}", errorText, file, line);
-            }
             if (errorText != NULL)
             {
+                acc3d_error("{0} \n File: {1}:{2}", errorText, file, line);
                 free(errorText);
             }
         }

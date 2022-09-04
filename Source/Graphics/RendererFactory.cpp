@@ -4,6 +4,13 @@ namespace acc3d::Graphics
 {
     std::unique_ptr<Renderer> RendererFactory::CreateRenderer(Core::Window const &window)
     {
+        if(!DirectX::XMVerifyCPUSupport())
+        {
+            acc3d_error("Aborting renderer creation! DirectX Math Library is not supported on "
+                        "this system.");
+            return {nullptr};
+        }
+
         auto pDevice = std::make_unique<Device>();
         if (!(pDevice->m_Device && pDevice->m_DXGIFactory))
         {
@@ -20,7 +27,7 @@ namespace acc3d::Graphics
         }
 
         auto pSwapChain = std::make_unique<SwapChain>(pDevice->GetDXGIFactory(),
-                                                      pCmdQueue->GetCommandQueue(), window,
+                                                      pCmdQueue->m_CmdQueue.Get(), window,
                                                       pDevice.get());
         if (!pSwapChain)
         {
@@ -59,6 +66,7 @@ namespace acc3d::Graphics
                 nullptr);
 
         pRenderer->UpdateRenderTargetViews();
+
         return std::move(pRenderer);
     }
 }

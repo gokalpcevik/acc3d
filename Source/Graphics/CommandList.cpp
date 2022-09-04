@@ -33,4 +33,11 @@ namespace acc3d::Graphics
 
     ID3D12GraphicsCommandList *GraphicsCommandList::GetGraphicsCommandList() const
     { return m_CmdList.Get(); }
+
+    Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList2> GraphicsCommandList::GetGraphicsCommandList2() const
+    {
+        Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList2> gfxCmdList2;
+        m_CmdList.As(&gfxCmdList2);
+        return gfxCmdList2;
+    }
 } // Graphics

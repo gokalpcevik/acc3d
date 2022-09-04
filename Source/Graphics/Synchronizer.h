@@ -15,13 +15,20 @@ namespace acc3d::Graphics
     public:
         Synchronizer() = default;
 
-        static uint64_t IncrementAndSignal(ID3D12CommandQueue *pCmdQueue, ID3D12Fence *pFence,
+        static uint64_t ExecuteCommandList(ID3D12CommandQueue* pCmdQueue, 
+            ID3D12GraphicsCommandList* pCmdList,
+            ID3D12Fence* pFence,
+            uint64_t& fenceValue);
+
+    	static uint64_t IncrementAndSignal(ID3D12CommandQueue *pCmdQueue, ID3D12Fence *pFence,
                                            uint64_t &fenceValue);
 
         static void WaitForFenceValue(ID3D12Fence *pFence, uint64_t fenceValue, HANDLE fenceEvent);
 
         static void Flush(ID3D12CommandQueue *pCmdQueue, ID3D12Fence *pFence, uint64_t &fenceValue,
                           HANDLE fenceEvent);
+
+        static bool IsFenceComplete(ID3D12Fence* pFence, uint64_t fenceValue);
     };
 
 

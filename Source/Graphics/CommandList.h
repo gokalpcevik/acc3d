@@ -26,6 +26,8 @@ namespace acc3d::Graphics
         void Reset(ID3D12CommandAllocator *pAllocator, ID3D12PipelineState *pPSO);
 
         [[nodiscard]] ID3D12GraphicsCommandList *GetGraphicsCommandList() const;
+        [[nodiscard]] Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList2> GetGraphicsCommandList2()
+        const;
 
     private:
         Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> m_CmdList;

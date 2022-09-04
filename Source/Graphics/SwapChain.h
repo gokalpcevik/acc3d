@@ -21,7 +21,7 @@ namespace acc3d::Graphics
 
         [[nodiscard]] UINT GetCurrentBackBufferIndex() const;
 
-        void Present(UINT syncInterval, UINT presentFlags);
+        void Present(UINT syncInterval, UINT presentFlags) const;
 
     private:
         Microsoft::WRL::ComPtr<IDXGISwapChain1> m_DXGISwapChain;

@@ -30,5 +30,6 @@ namespace acc3d::Graphics
         Microsoft::WRL::ComPtr<IDXGIFactory3> m_DXGIFactory;
 
         friend class RendererFactory;
+        friend class Renderer;
     };
 } // namespace acc3d

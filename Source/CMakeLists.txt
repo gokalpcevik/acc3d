@@ -1,3 +1,5 @@
 add_subdirectory(Core)
 add_subdirectory(Graphics)
+add_subdirectory(ECS)
+add_subdirectory(AssetCore)
 add_subdirectory(Util)

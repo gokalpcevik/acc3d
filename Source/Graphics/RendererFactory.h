@@ -3,8 +3,7 @@
 #include "Renderer.h"
 #include "../Core/Window.h"
 #include <memory>
-#include "Direct3D12Utility.h"
-
+#include <DirectXMath.h>
 
 namespace acc3d::Graphics
 {

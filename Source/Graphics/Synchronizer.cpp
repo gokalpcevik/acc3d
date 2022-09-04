@@ -2,9 +2,18 @@
 
 namespace acc3d::Graphics
 {
+	uint64_t Synchronizer::ExecuteCommandList(ID3D12CommandQueue* pCmdQueue,
+		ID3D12GraphicsCommandList* pCmdList,
+		ID3D12Fence* pFence,
+		uint64_t& fenceValue)
+	{
+		ID3D12CommandList* const commandLists[] = { pCmdList };
+		pCmdQueue->ExecuteCommandLists(1UL, commandLists);
+		return Synchronizer::IncrementAndSignal(pCmdQueue, pFence, fenceValue);
+	}
 
 	uint64_t Synchronizer::IncrementAndSignal(ID3D12CommandQueue* pCmdQueue, ID3D12Fence* pFence,
-		uint64_t& fenceValue)
+	                                          uint64_t& fenceValue)
 	{
 		uint64_t fenceValueForSignal = ++fenceValue;
 		D3D_CALL(pCmdQueue->Signal(pFence, fenceValueForSignal));
@@ -26,4 +35,8 @@ namespace acc3d::Graphics
 		Synchronizer::WaitForFenceValue(pFence, fenceValueForSignal, fenceEvent);
 	}
 
+	bool Synchronizer::IsFenceComplete(ID3D12Fence* pFence, uint64_t fenceValue)
+	{
+		return pFence->GetCompletedValue() >= fenceValue;
+	}
 }

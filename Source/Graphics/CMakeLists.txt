@@ -1,7 +1,8 @@
 target_sources(acc3d PRIVATE
     Renderer.cpp
     RendererFactory.cpp
-    Direct3D12Utility.cpp
+    ShaderCompiler.cpp
+    ShaderLibrary.cpp
     Device.cpp
     SwapChain.cpp
     CommandQueue.cpp
@@ -11,4 +12,5 @@ target_sources(acc3d PRIVATE
     DescriptorHeap.cpp
     ResultHandler.cpp
     Synchronizer.cpp
-        RendererConfiguration.h)
+    RendererConfiguration.h
+    Type.h)
