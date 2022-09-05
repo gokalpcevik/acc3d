@@ -14,7 +14,6 @@ namespace acc3d::AssetCore
         struct MeshAssetContent
         {
             std::vector<Graphics::Vertex> Vertices{};
-            std::vector<Graphics::Face> Faces{};
             std::vector<uint32_t> Indices{};
         };
 

@@ -19,25 +19,18 @@ namespace acc3d::AssetCore
 
         auto const *pMesh = pScene->mMeshes[0];
         m_Data.Vertices.reserve(pMesh->mNumVertices);
-        m_Data.Faces.reserve(pMesh->mNumFaces);
         m_Data.Indices.reserve(pMesh->mNumFaces * 3);
 
         for (size_t i = 0; i < pMesh->mNumVertices; ++i)
         {
-            Eigen::Vector4f pos = {pMesh->mVertices[i].x, pMesh->mVertices[i].y,
-                                 pMesh->mVertices[i].z,
-                            1.0f};
-            Eigen::Vector4f normal = {pMesh->mNormals[i].x, pMesh->mNormals[i].y,
-                                    pMesh->mNormals[i].z,
-                               0.0f};
-            m_Data.Vertices.emplace_back(Graphics::Vertex{pos, normal});
+            Eigen::Vector3f pos = {pMesh->mVertices[i].x, pMesh->mVertices[i].y,
+                                 pMesh->mVertices[i].z};
+            m_Data.Vertices.emplace_back(Graphics::Vertex{pos, {1.0f,0.0f,1.0f}});
         }
 
         for (size_t i = 0; i < pMesh->mNumFaces; ++i)
         {
             auto const &face = pMesh->mFaces[i];
-            m_Data.Faces.emplace_back(
-                    Graphics::Face{face.mIndices[0], face.mIndices[1], face.mIndices[2]});
             m_Data.Indices.push_back(face.mIndices[0]);
             m_Data.Indices.push_back(face.mIndices[1]);
             m_Data.Indices.push_back(face.mIndices[2]);
