@@ -1,2 +1,3 @@
 target_sources(acc3d PRIVATE
-	StringUtil.cpp)
+	StringUtil.cpp
+	RandomGenerator.cpp)
