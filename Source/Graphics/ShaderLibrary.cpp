@@ -6,15 +6,20 @@
 
 namespace acc3d::Graphics
 {
-    std::unordered_map<ShaderCompilationEntryId, ShaderCompilationEntry> s_ShaderIdMap{};
+    std::unordered_map<ShaderCompilationEntryId, ShaderCompilationEntry> ShaderLibrary::s_ShaderIdMap{};
 
 
     std::tuple<ShaderCompilationEntryId, ShaderCompilationEntry> ShaderLibrary::CompileAndLoad(const ShaderCompilationParameters& params)
     {
+        ShaderCompilationEntryId id = ShaderLibrary::ShaderPathToId(params.ShaderPath);
+        if(IsLoaded(id))
+        {
+            return { id,GetCompilationEntry(id) };
+        }
+
         auto&& entry = ShaderCompiler::CompileShader(params);
         if(entry.CompilationSucceeded)
         {
-            ShaderCompilationEntryId id = ShaderLibrary::ShaderPathToId(params.ShaderPath);
             s_ShaderIdMap[id] = entry;
             return { id,entry };
         }

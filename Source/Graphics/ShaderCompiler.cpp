@@ -4,16 +4,17 @@ namespace acc3d::Graphics
 {
 	ShaderCompilationParameters ShaderCompilationParameters::Param_CompileVS_StdIncNoFlagsMainEntry(LPCWSTR ShaderPath)
 	{
-		return { ShaderPath,nullptr,D3D_COMPILE_STANDARD_FILE_INCLUDE,"main","vs_5_0",0,ShaderType::Vertex };
+		return { ShaderPath,nullptr,D3D_COMPILE_STANDARD_FILE_INCLUDE,"main","vs_5_1",0,ShaderType::Vertex };
 	}
 
 	ShaderCompilationParameters ShaderCompilationParameters::Param_CompilePS_StdIncNoFlagsMainEntry(LPCWSTR ShaderPath)
 	{
-		return { ShaderPath,nullptr,D3D_COMPILE_STANDARD_FILE_INCLUDE,"main","ps_5_0",0,ShaderType::Pixel };
+		return { ShaderPath,nullptr,D3D_COMPILE_STANDARD_FILE_INCLUDE,"main","ps_5_1",0,ShaderType::Pixel };
 	}
 
 	ShaderCompilationEntry ShaderCompiler::CompileShader(const ShaderCompilationParameters& param)
 	{
+		assert(std::filesystem::exists(param.ShaderPath) && "Shader file doesn't exist!");
 		ShaderCompilationEntry entry;
 
 		HRESULT result = D3DCompileFromFile(
@@ -26,8 +27,6 @@ namespace acc3d::Graphics
 			0, 
 			&entry.Blob, 
 			&entry.ErrorBlob);
-
-		THROW_IFF(result);
 
 		if(FAILED(result) && entry.ErrorBlob)
 		{

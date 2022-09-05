@@ -21,17 +21,17 @@ namespace acc3d::Graphics
 		ShaderLibrary() = default;
 		ShaderLibrary(const ShaderLibrary&) = delete;
 
-		std::tuple<ShaderCompilationEntryId, ShaderCompilationEntry> CompileAndLoad(const ShaderCompilationParameters& params);
+		static std::tuple<ShaderCompilationEntryId, ShaderCompilationEntry> CompileAndLoad(const ShaderCompilationParameters& params);
 
-		const ShaderCompilationEntry& GetCompilationEntry(ShaderCompilationEntryId id);
+		static const ShaderCompilationEntry& GetCompilationEntry(ShaderCompilationEntryId id);
 
-		void RemoveCompilationEntry(ShaderCompilationEntryId id);
+		static void RemoveCompilationEntry(ShaderCompilationEntryId id);
 
 		static ShaderCompilationEntryId ShaderPathToId(const std::filesystem::path& path);
 
-		bool IsLoaded(ShaderCompilationEntryId id);
+		static bool IsLoaded(ShaderCompilationEntryId id);
 
 	private:
-		std::unordered_map<ShaderCompilationEntryId, ShaderCompilationEntry> s_ShaderIdMap{};
+		static std::unordered_map<ShaderCompilationEntryId, ShaderCompilationEntry> s_ShaderIdMap;
 	};
 } // Graphics
