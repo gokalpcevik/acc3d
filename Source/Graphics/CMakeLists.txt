@@ -8,6 +8,7 @@ target_sources(acc3d PRIVATE
     CommandQueue.cpp
     CommandList.cpp
     CommandAllocator.cpp
+    Resource.cpp
     RootSignature.cpp
     Fence.cpp
     DescriptorHeap.cpp
