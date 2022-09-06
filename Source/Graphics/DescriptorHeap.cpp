@@ -4,8 +4,14 @@ namespace acc3d::Graphics
 {
     DescriptorHeap::DescriptorHeap(ID3D12Device *pDevice,
                                    const D3D12_DESCRIPTOR_HEAP_DESC &desc)
-    {
+	                                   : m_DescriptorHeapType(desc.Type)
+	{
         THROW_IFF(pDevice->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&m_DescriptorHeap)));
+    }
+
+    D3D12_DESCRIPTOR_HEAP_TYPE DescriptorHeap::GetDescriptorHeapType() const
+    {
+        return m_DescriptorHeapType;
     }
 
     std::pair<std::unique_ptr<DescriptorHeap>, std::unique_ptr<DescriptorHeap>>

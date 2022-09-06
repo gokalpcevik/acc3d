@@ -7,7 +7,7 @@
 
 namespace acc3d::Graphics
 {
-    struct DescriptorHeapSizeInfo
+    struct DescriptorSizeInfo
     {
         UINT RTVDescriptorSize = 0UL;
         UINT DSVDescriptorSize = 0UL;
@@ -23,14 +23,17 @@ namespace acc3d::Graphics
         [[nodiscard]] ID3D12DescriptorHeap *GetDescriptorHeap() const
         { return m_DescriptorHeap.Get(); }
 
+        [[nodiscard]] D3D12_DESCRIPTOR_HEAP_TYPE GetDescriptorHeapType() const;
+
         static std::pair<std::unique_ptr<DescriptorHeap>, std::unique_ptr<DescriptorHeap>>
         CreateDescriptorHeapsForSwapChainBuffers(ID3D12Device *pDevice);
 
-        static DescriptorHeapSizeInfo GetDescriptorHeapSizeInfo(ID3D12Device *pDevice);
+        static DescriptorSizeInfo GetDescriptorSizeInfo(ID3D12Device *pDevice);
 
 
     private:
         Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_DescriptorHeap;
+        D3D12_DESCRIPTOR_HEAP_TYPE m_DescriptorHeapType{};
     };
 
 } // Graphics

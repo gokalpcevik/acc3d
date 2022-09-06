@@ -19,7 +19,10 @@ namespace acc3d::Graphics
         }
         auto pCmdQueue = std::make_unique<CommandQueue>(pDevice->GetD3D12Device(),
                                                         D3D12_COMMAND_LIST_TYPE_DIRECT);
-        if (!pCmdQueue)
+
+        auto pCopyCmdQueue = std::make_unique<CommandQueue>(pDevice->GetD3D12Device(),
+            D3D12_COMMAND_LIST_TYPE_COPY);
+        if (!(pCmdQueue && pCopyCmdQueue))
         {
             acc3d_error(
                     "Aborting renderer creation! Command queue  wasn't initialized properly.");
@@ -36,7 +39,7 @@ namespace acc3d::Graphics
         }
         auto pFence = std::make_unique<Fence>(pDevice->GetD3D12Device(), D3D12_FENCE_FLAG_NONE,
                                               0);
-        DescriptorHeapSizeInfo descriptorHeapSizeInfo = DescriptorHeap::GetDescriptorHeapSizeInfo(
+        DescriptorSizeInfo descriptorHeapSizeInfo = DescriptorHeap::GetDescriptorSizeInfo(
                 pDevice->GetD3D12Device());
 
         auto &&[RTVDescriptorHeap, DSVDescriptorHeap] =
@@ -46,7 +49,8 @@ namespace acc3d::Graphics
         auto pRenderer = std::make_unique<Renderer>();
         pRenderer->m_Device = std::move(pDevice);
         pRenderer->m_SwapChain = std::move(pSwapChain);
-        pRenderer->m_CmdQueue = std::move(pCmdQueue);
+        pRenderer->m_DirectCmdQueue = std::move(pCmdQueue);
+        pRenderer->m_CopyCmdQueue = std::move(pCopyCmdQueue);
         pRenderer->m_Fence = std::move(pFence);
         pRenderer->m_DescriptorHeapSizeInfo = descriptorHeapSizeInfo;
         pRenderer->m_RTVDescriptorHeap = std::move(RTVDescriptorHeap);
@@ -54,19 +58,19 @@ namespace acc3d::Graphics
         pRenderer->m_Window = &window;
         pRenderer->m_FenceEvent = Fence::CreateFenceEventHandle();
 
-        for (auto &m_CmdAllocator: pRenderer->m_CmdAllocators)
+        for (auto &m_CmdAllocator: pRenderer->m_DrawCmdAllocators)
         {
             m_CmdAllocator = std::make_unique<CommandAllocator>(
                     pRenderer->m_Device->GetD3D12Device(), D3D12_COMMAND_LIST_TYPE_DIRECT);
         }
         pRenderer->m_GfxCmdList = std::make_unique<GraphicsCommandList>(
                 pRenderer->m_Device->GetD3D12Device(),
-                pRenderer->m_CmdAllocators[pRenderer->m_CurrentBackBufferIndex]->GetCommandAllocator(),
+                pRenderer->m_DrawCmdAllocators[pRenderer->m_CurrentBackBufferIndex]->GetCommandAllocator(),
                 D3D12_COMMAND_LIST_TYPE_DIRECT,
                 nullptr);
 
         pRenderer->UpdateRenderTargetViews();
-
+        //pRenderer->LoadTestScene();
         return std::move(pRenderer);
     }
 }
