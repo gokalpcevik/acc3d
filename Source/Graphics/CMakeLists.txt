@@ -13,6 +13,7 @@ target_sources(acc3d PRIVATE
     Fence.cpp
     DescriptorHeap.cpp
     ResultHandler.cpp
+    InfoQueue.cpp
     Synchronizer.cpp
     RendererConfiguration.h
     Type.h)
