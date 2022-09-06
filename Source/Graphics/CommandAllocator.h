@@ -12,9 +12,8 @@ namespace acc3d::Graphics
     public:
         CommandAllocator(ID3D12Device *pDevice, D3D12_COMMAND_LIST_TYPE type);
 
-        [[nodiscard]] ID3D12CommandAllocator *GetCommandAllocator() const
-        { return m_CmdAllocator.Get(); }
-
+        [[nodiscard]] ID3D12CommandAllocator *GetD3D12CommandAllocatorPtr() const;
+        [[nodiscard]] Microsoft::WRL::ComPtr<ID3D12CommandAllocator>& GetD3D12CommandAllocator();
         void Reset();
 
     private:

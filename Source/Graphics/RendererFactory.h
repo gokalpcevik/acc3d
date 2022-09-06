@@ -12,7 +12,7 @@ namespace acc3d::Graphics
     public:
         RendererFactory() = default;
 
-        static std::unique_ptr<Renderer> CreateRenderer(Core::Window const &window);
+        static std::unique_ptr<Renderer> CreateRenderer(Core::Window const& window);
     };
 
 

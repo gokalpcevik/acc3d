@@ -28,4 +28,14 @@ namespace acc3d::Graphics
 			&errorBlob));
 		return { std::move(rootSignatureBlob),std::move(errorBlob) };
 	}
+
+	ID3D12RootSignature* RootSignature::GetD3D12RootSignaturePtr()
+	{
+		return m_RootSignature.Get();
+	}
+
+	Microsoft::WRL::ComPtr<ID3D12RootSignature>& RootSignature::GetD3D12RootSignature()
+	{
+		return m_RootSignature;
+	}
 }

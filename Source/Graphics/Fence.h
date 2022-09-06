@@ -38,7 +38,8 @@ namespace acc3d::Graphics
 
         static HANDLE CreateFenceEventHandle();
 
-        [[nodiscard]] ID3D12Fence *GetFence() const;
+        [[nodiscard]] ID3D12Fence* GetD3D12FencePtr() const;
+        [[nodiscard]] Microsoft::WRL::ComPtr<ID3D12Fence>& GetD3D12Fence();
 
     private:
         Microsoft::WRL::ComPtr<ID3D12Fence> m_Fence;

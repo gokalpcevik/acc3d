@@ -20,15 +20,16 @@ namespace acc3d::Graphics
     public:
         DescriptorHeap(ID3D12Device *pDevice, const D3D12_DESCRIPTOR_HEAP_DESC &desc);
 
-        [[nodiscard]] ID3D12DescriptorHeap *GetDescriptorHeap() const
-        { return m_DescriptorHeap.Get(); }
+        [[nodiscard]] ID3D12DescriptorHeap* GetD3D12DescriptorHeapPtr() const;
+        [[nodiscard]] Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>& GetD3D12DescriptorHeap();
 
-        [[nodiscard]] D3D12_DESCRIPTOR_HEAP_TYPE GetDescriptorHeapType() const;
+        [[nodiscard]] D3D12_DESCRIPTOR_HEAP_TYPE GetDescriptorHeapType() const noexcept;
+        [[nodiscard]] D3D12_CPU_DESCRIPTOR_HANDLE GetCPUDescriptorHandleForHeapStart() const noexcept;
 
         static std::pair<std::unique_ptr<DescriptorHeap>, std::unique_ptr<DescriptorHeap>>
         CreateDescriptorHeapsForSwapChainBuffers(ID3D12Device *pDevice);
 
-        static DescriptorSizeInfo GetDescriptorSizeInfo(ID3D12Device *pDevice);
+        static DescriptorSizeInfo GetDescriptorSizeInfo(ID3D12Device *pDevice) noexcept;
 
 
     private:

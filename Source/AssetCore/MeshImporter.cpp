@@ -1,6 +1,6 @@
 #include "MeshImporter.h"
 
-namespace acc3d::AssetCore
+namespace acc3d::Asset
 {
 
     MeshImporter::MeshImporter(std::filesystem::path path)

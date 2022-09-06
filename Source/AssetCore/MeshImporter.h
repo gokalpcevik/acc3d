@@ -9,7 +9,7 @@
 #include "../Graphics/Type.h"
 #include "../Core/Log.h"
 
-namespace acc3d::AssetCore
+namespace acc3d::Asset
     {
         struct MeshAssetContent
         {

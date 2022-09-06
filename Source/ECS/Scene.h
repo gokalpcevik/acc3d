@@ -2,9 +2,16 @@
 
 #include <entt/entt.hpp>
 #include "CommonComponents.h"
-#include "MeshComponent.h"
-#include "../Graphics/Renderer.h"
+#include "MeshRendererComponent.h"
 #include "../AssetCore/MeshLibrary.h"
+
+namespace acc3d
+{
+	namespace Graphics
+	{
+		class Renderer;
+	}
+}
 
 namespace acc3d::ECS
 {
@@ -13,19 +20,19 @@ namespace acc3d::ECS
     class Scene
     {
     public:
-        Scene() = default;
+        explicit Scene(Graphics::Renderer* pRenderer);
 
         Scene(Scene &&) = default;
 
         Scene(const Scene &) = delete;
 
-        auto CreateEntity() -> Entity;
+        entt::registry const& GetEnTTRegistry() const;
+
+    	auto CreateEntity() -> Entity;
 
         void Destroy(Entity entity);
 
         void Update(float dt);
-
-        void Draw(Graphics::Renderer &renderer, const FLOAT *clearColor);
 
         template<typename T>
         auto GetComponent(entt::entity entity) -> T &;
@@ -37,7 +44,12 @@ namespace acc3d::ECS
         auto RemoveComponent(entt::entity entity) -> void;
 
     private:
+    	void OnConstructMeshRendererComponent(entt::registry& registry, entt::entity entity) const;
+    	void OnDestroyMeshRendererComponent(entt::registry& registry, entt::entity entity) const;
+
+    private:
         entt::registry m_Registry{};
+        Graphics::Renderer* m_Renderer{ nullptr };
     };
 
     template<typename T>

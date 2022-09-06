@@ -9,9 +9,22 @@ namespace acc3d::Graphics
         THROW_IFF(pDevice->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&m_DescriptorHeap)));
     }
 
-    D3D12_DESCRIPTOR_HEAP_TYPE DescriptorHeap::GetDescriptorHeapType() const
+    ID3D12DescriptorHeap* DescriptorHeap::GetD3D12DescriptorHeapPtr() const
+    { return m_DescriptorHeap.Get(); }
+
+    Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>& DescriptorHeap::GetD3D12DescriptorHeap()
+    {
+        return m_DescriptorHeap;
+    }
+
+    D3D12_DESCRIPTOR_HEAP_TYPE DescriptorHeap::GetDescriptorHeapType() const noexcept
     {
         return m_DescriptorHeapType;
+    }
+
+    D3D12_CPU_DESCRIPTOR_HANDLE DescriptorHeap::GetCPUDescriptorHandleForHeapStart() const noexcept
+    {
+        return m_DescriptorHeap->GetCPUDescriptorHandleForHeapStart();
     }
 
     std::pair<std::unique_ptr<DescriptorHeap>, std::unique_ptr<DescriptorHeap>>
@@ -38,9 +51,9 @@ namespace acc3d::Graphics
         return {std::move(rtvDescriptorHeap), std::move(dsvDescriptorHeap)};
     }
 
-    DescriptorHeapSizeInfo DescriptorHeap::GetDescriptorHeapSizeInfo(ID3D12Device *pDevice)
+    DescriptorSizeInfo DescriptorHeap::GetDescriptorSizeInfo(ID3D12Device *pDevice) noexcept
     {
-        DescriptorHeapSizeInfo info{};
+        DescriptorSizeInfo info{};
         info.RTVDescriptorSize = pDevice->GetDescriptorHandleIncrementSize(
                 D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
         info.DSVDescriptorSize = pDevice->GetDescriptorHandleIncrementSize(

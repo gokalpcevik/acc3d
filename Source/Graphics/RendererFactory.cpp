@@ -17,10 +17,11 @@ namespace acc3d::Graphics
             acc3d_error("Aborting renderer creation! Device wasn't initialized properly.");
             return {nullptr};
         }
-        auto pCmdQueue = std::make_unique<CommandQueue>(pDevice->GetD3D12Device(),
+
+        auto pCmdQueue = std::make_unique<CommandQueue>(pDevice->GetD3D12DevicePtr(),
                                                         D3D12_COMMAND_LIST_TYPE_DIRECT);
 
-        auto pCopyCmdQueue = std::make_unique<CommandQueue>(pDevice->GetD3D12Device(),
+        auto pCopyCmdQueue = std::make_unique<CommandQueue>(pDevice->GetD3D12DevicePtr(),
             D3D12_COMMAND_LIST_TYPE_COPY);
         if (!(pCmdQueue && pCopyCmdQueue))
         {
@@ -37,40 +38,53 @@ namespace acc3d::Graphics
             acc3d_error("Aborting renderer creation! SwapChain wasn't initialized properly.");
             return {nullptr};
         }
-        auto pFence = std::make_unique<Fence>(pDevice->GetD3D12Device(), D3D12_FENCE_FLAG_NONE,
+        auto pDirectFence = std::make_unique<Fence>(pDevice->GetD3D12DevicePtr(), D3D12_FENCE_FLAG_NONE,
                                               0);
-        DescriptorSizeInfo descriptorHeapSizeInfo = DescriptorHeap::GetDescriptorSizeInfo(
-                pDevice->GetD3D12Device());
+        auto pCopyFence = std::make_unique<Fence>(pDevice->GetD3D12DevicePtr(), D3D12_FENCE_FLAG_NONE,
+            0);
+        DescriptorSizeInfo const descriptorHeapSizeInfo = DescriptorHeap::GetDescriptorSizeInfo(
+                pDevice->GetD3D12DevicePtr());
 
         auto &&[RTVDescriptorHeap, DSVDescriptorHeap] =
                 DescriptorHeap::CreateDescriptorHeapsForSwapChainBuffers(
-                        pDevice->GetD3D12Device());
+                        pDevice->GetD3D12DevicePtr());
 
         auto pRenderer = std::make_unique<Renderer>();
+
         pRenderer->m_Device = std::move(pDevice);
         pRenderer->m_SwapChain = std::move(pSwapChain);
         pRenderer->m_DirectCmdQueue = std::move(pCmdQueue);
         pRenderer->m_CopyCmdQueue = std::move(pCopyCmdQueue);
-        pRenderer->m_Fence = std::move(pFence);
+        pRenderer->m_DirectFence = std::move(pDirectFence);
         pRenderer->m_DescriptorHeapSizeInfo = descriptorHeapSizeInfo;
         pRenderer->m_RTVDescriptorHeap = std::move(RTVDescriptorHeap);
         pRenderer->m_DSVDescriptorHeap = std::move(DSVDescriptorHeap);
-        pRenderer->m_Window = &window;
-        pRenderer->m_FenceEvent = Fence::CreateFenceEventHandle();
+    	pRenderer->m_Window = &window;
+        pRenderer->m_DirectFenceEvent = Fence::CreateFenceEventHandle();
+        pRenderer->m_Viewport = CD3DX12_VIEWPORT(0.0f, 0.0f, window.GetSurfaceWidth(), window.GetSurfaceHeight(), 0.0f, 1.0f);
 
-        for (auto &m_CmdAllocator: pRenderer->m_DrawCmdAllocators)
+#if defined(_DEBUG) || defined(DEBUG)
+        auto pInfoQueue = std::make_unique<InfoQueue>(pRenderer->GetDevice()->GetD3D12DevicePtr());
+        pRenderer->m_InfoQueue = std::move(pInfoQueue);
+#endif
+
+        for (auto &m_CmdAllocator: pRenderer->m_GfxCmdAllocators)
         {
             m_CmdAllocator = std::make_unique<CommandAllocator>(
-                    pRenderer->m_Device->GetD3D12Device(), D3D12_COMMAND_LIST_TYPE_DIRECT);
+                    pRenderer->m_Device->GetD3D12DevicePtr(), D3D12_COMMAND_LIST_TYPE_DIRECT);
         }
         pRenderer->m_GfxCmdList = std::make_unique<GraphicsCommandList>(
-                pRenderer->m_Device->GetD3D12Device(),
-                pRenderer->m_DrawCmdAllocators[pRenderer->m_CurrentBackBufferIndex]->GetCommandAllocator(),
+                pRenderer->m_Device->GetD3D12DevicePtr(),
+                pRenderer->m_GfxCmdAllocators[pRenderer->m_CurrentBackBufferIndex]->GetD3D12CommandAllocatorPtr(),
                 D3D12_COMMAND_LIST_TYPE_DIRECT,
                 nullptr);
 
-        pRenderer->UpdateRenderTargetViews();
-        //pRenderer->LoadTestScene();
+        pRenderer->m_DrawableMap.set_empty_key(RENDERER_ID_EMPTY_VALUE);
+        pRenderer->m_DrawableMap.set_deleted_key(RENDERER_ID_DELETED_VALUE);
+
+    	pRenderer->UpdateRenderTargetViews();
+        pRenderer->ResizeDepthBuffer(window.GetSurfaceWidth(),window.GetSurfaceHeight());
+        pRenderer->LoadTestScene();
         return std::move(pRenderer);
     }
 }

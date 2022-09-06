@@ -13,8 +13,23 @@ namespace acc3d::Graphics
 			IID_PPV_ARGS(&m_Resource)));
 	}
 
+	Resource::Resource(Microsoft::WRL::ComPtr<ID3D12Resource> const& resource)
+		: m_Resource(resource)
+	{
+	}
+
+	Microsoft::WRL::ComPtr<ID3D12Resource> & Resource::GetResource()
+	{
+		return m_Resource;
+	}
+
+	ID3D12Resource* Resource::GetResourcePtr() const
+	{
+		return m_Resource.Get();
+	}
+
 	void Resource::UpdateBufferResource(ID3D12GraphicsCommandList2* pCmdList, size_t NumElems, size_t ElemSize,
-		void const* pBufferData, D3D12_RESOURCE_FLAGS flags)
+	                                    void const* pBufferData, D3D12_RESOURCE_FLAGS flags)
 	{
 		ComPtr<ID3D12Resource> intermediateResource;
 		Resource::UpdateBufferResource(m_Device, pCmdList, &m_Resource, &intermediateResource, NumElems, ElemSize,
@@ -27,11 +42,12 @@ namespace acc3d::Graphics
 		Resource::TransitionAndBarrier(m_Resource.Get(), pGfxCmdList, stateBefore, stateAfter);
 	}
 
-	void Resource::UpdateBufferResource(ID3D12Device* pDevice, ID3D12GraphicsCommandList2* pCmdList, ID3D12Resource** pDestinationResource,
-	                                    ID3D12Resource** pIntermediateResource, size_t NumElems, size_t ElemSize, void const* bufferData,
-	                                    D3D12_RESOURCE_FLAGS flags)
+	void Resource::UpdateBufferResource(ID3D12Device* pDevice, ID3D12GraphicsCommandList2* pCmdList,
+	                                    ID3D12Resource** pDestinationResource,
+	                                    ID3D12Resource** pIntermediateResource, size_t NumElems, size_t ElemSize, 
+										void const* bufferData, D3D12_RESOURCE_FLAGS flags)
 	{
-		size_t bufferSizeInBytes = NumElems * ElemSize;
+		size_t const bufferSizeInBytes = NumElems * ElemSize;
 
 		auto const destinationHeapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
 		auto const destinationResourceDescription = CD3DX12_RESOURCE_DESC::Buffer(bufferSizeInBytes, flags);
@@ -55,7 +71,7 @@ namespace acc3d::Graphics
 				D3D12_RESOURCE_STATE_GENERIC_READ,
 				nullptr,
 				IID_PPV_ARGS(pIntermediateResource)));
-			D3D12_SUBRESOURCE_DATA subresourceData = {};
+			D3D12_SUBRESOURCE_DATA subresourceData;
 			subresourceData.pData = bufferData;
 			subresourceData.RowPitch = bufferSizeInBytes;
 			subresourceData.SlicePitch = subresourceData.RowPitch;
@@ -76,7 +92,7 @@ namespace acc3d::Graphics
 	void Resource::TransitionAndBarrier(ID3D12Resource* pResource, ID3D12GraphicsCommandList2* pGfxCmdList,
 	                                    D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter)
 	{
-		CD3DX12_RESOURCE_BARRIER transitionResourceBarrier = CD3DX12_RESOURCE_BARRIER::Transition(
+		CD3DX12_RESOURCE_BARRIER const transitionResourceBarrier = CD3DX12_RESOURCE_BARRIER::Transition(
 			pResource, stateBefore, stateAfter);
 		pGfxCmdList->ResourceBarrier(1UL, &transitionResourceBarrier);
 	}

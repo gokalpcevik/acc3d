@@ -26,7 +26,7 @@ namespace acc3d::Core
     auto Application::Start() -> int32_t
     {
         Log::Init();
-        m_Window = std::make_unique<Window>(1280, 720, "Accelerated Graphics 3D",
+        m_Window = std::make_unique<Window>(1280, 720, "Direct3D12 Renderer",
                                             SDL_WINDOW_RESIZABLE);
         if (m_Window->IsNull())
             return -1;
@@ -35,7 +35,9 @@ namespace acc3d::Core
         if (!m_Renderer)
             return -1;
 
-        m_Scene = std::make_unique<ECS::Scene>();
+        m_Scene = std::make_unique<ECS::Scene>(m_Renderer.get());
+        auto entity = m_Scene->CreateEntity();
+        auto& mrc = entity.AddComponent<ECS::MeshRendererComponent>();
 
         return Update();
     }
@@ -81,8 +83,8 @@ namespace acc3d::Core
                     }
                 }
             }
-            const FLOAT clearColor[] = {0.15f, 0.15f, 0.15f, 1.0f};
-            m_Scene->Draw(*m_Renderer, clearColor);
+            const FLOAT clearColor[] = {0.05f, 0.05f, 0.05f, 1.0f};
+            m_Renderer->Render(clearColor);
         }
         SDL_Quit();
         return 0;

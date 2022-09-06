@@ -24,9 +24,12 @@ namespace acc3d
             return fenceEvent;
         }
 
-        ID3D12Fence *Fence::GetFence() const
+        ID3D12Fence *Fence::GetD3D12FencePtr() const
         { return m_Fence.Get(); }
 
-
+        Microsoft::WRL::ComPtr<ID3D12Fence>& Fence::GetD3D12Fence()
+        {
+            return m_Fence;
+        }
     } // acc3d
 } // Graphics

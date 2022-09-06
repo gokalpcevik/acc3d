@@ -12,5 +12,5 @@ struct PixelShaderOutput
 
 void main(in PixelShaderInput PSIn,out PixelShaderOutput PSOut)
 {
-    PSOut.Color = PSIn.Color;
+    PSOut.Color = normalize(PSIn.Position);
 }

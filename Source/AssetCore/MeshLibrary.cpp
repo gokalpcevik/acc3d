@@ -1,6 +1,6 @@
 #include "MeshLibrary.h"
 
-namespace acc3d::AssetCore
+namespace acc3d::Asset
 {
     std::unordered_map<MeshAssetId, MeshAssetContent> MeshLibrary::s_MeshIdMap{};
 

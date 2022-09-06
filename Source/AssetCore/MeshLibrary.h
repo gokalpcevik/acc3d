@@ -7,7 +7,7 @@
 #include "MeshImporter.h"
 #include "../Core/Log.h"
 
-namespace acc3d::AssetCore
+namespace acc3d::Asset
 {
     using MeshAssetId = size_t;
 

@@ -1,27 +1,23 @@
 #pragma once
 
-#include <Eigen/Eigen>
+#include <DirectXMath.h>
 #include <utility>
 #include <string>
 
 namespace acc3d::ECS
 {
-    using Eigen::Matrix4f;
-    using Eigen::Vector4f;
-    using Eigen::Vector3f;
-
     struct TransformComponent
     {
         TransformComponent() = default;
 
-        TransformComponent(Vector3f translation, Vector3f rotation, Vector3f scale)
+        TransformComponent(DirectX::XMFLOAT3 translation, DirectX::XMFLOAT3 rotation, DirectX::XMFLOAT3 scale)
                 : Translation(std::move(translation)), Rotation(std::move(rotation)),
                   Scale(std::move(scale))
         {}
 
-        Vector3f Translation{};
-        Vector3f Rotation{0.0f, 0.0f, 0.0f};
-        Vector3f Scale{};
+        DirectX::XMFLOAT3 Translation{};
+        DirectX::XMFLOAT3 Rotation{ 0.0f, 0.0f, 0.0f };
+        DirectX::XMFLOAT3 Scale{};
     };
 
     struct TagComponent

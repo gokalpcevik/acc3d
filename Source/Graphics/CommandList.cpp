@@ -10,20 +10,11 @@ namespace acc3d::Graphics
                                              ID3D12CommandAllocator *pAllocator,
                                              D3D12_COMMAND_LIST_TYPE type,
                                              ID3D12PipelineState *pInitialState)
-    {
-        auto createResult = pDevice->CreateCommandList(0, type, pAllocator, pInitialState,
-                                                       IID_PPV_ARGS(&m_CmdList));
-        if (!SUCCEEDED(createResult))
-        {
-            acc3d_error("Graphics command list could not be created properly.");
-            return;
-        }
-
-        // Command list is created in an open state and must be closed before it can be reset.
-        if (SUCCEEDED(createResult))
-        {
-            THROW_IFF(m_CmdList->Close());
-        }
+	                                             : m_CmdListType(type)
+	{
+        THROW_IFF(pDevice->CreateCommandList(0, type, pAllocator, pInitialState,
+            IID_PPV_ARGS(&m_CmdList)));
+        THROW_IFF(m_CmdList->Close());
     }
 
     void GraphicsCommandList::Reset(ID3D12CommandAllocator *pAllocator, ID3D12PipelineState *pPSO)
@@ -31,13 +22,21 @@ namespace acc3d::Graphics
         THROW_IFF(m_CmdList->Reset(pAllocator, pPSO));
     }
 
-    ID3D12GraphicsCommandList *GraphicsCommandList::GetGraphicsCommandList() const
+    void GraphicsCommandList::Close()
+    {
+        THROW_IFF(m_CmdList->Close());
+    }
+
+    D3D12_COMMAND_LIST_TYPE GraphicsCommandList::GetCommandListType() const
+    {
+        return m_CmdListType;
+    }
+
+    ID3D12GraphicsCommandList2 *GraphicsCommandList::GetD3D12GraphicsCommandListPtr() const
     { return m_CmdList.Get(); }
 
-    Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList2> GraphicsCommandList::GetGraphicsCommandList2() const
+    Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList2>& GraphicsCommandList::GetD3D12GraphicsCommandList()
     {
-        Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList2> gfxCmdList2;
-        m_CmdList.As(&gfxCmdList2);
-        return gfxCmdList2;
+        return m_CmdList;
     }
 } // Graphics

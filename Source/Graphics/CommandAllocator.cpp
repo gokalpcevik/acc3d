@@ -8,13 +8,15 @@ namespace acc3d::Graphics
 {
     CommandAllocator::CommandAllocator(ID3D12Device *pDevice, D3D12_COMMAND_LIST_TYPE type)
     {
-        auto hr = pDevice->CreateCommandAllocator(type, IID_PPV_ARGS(&m_CmdAllocator));
-        if (!SUCCEEDED(hr))
-        {
-            acc3d_error("Command Allocator  could not be created properly.");
-            return;
-        }
+        THROW_IFF(pDevice->CreateCommandAllocator(type, IID_PPV_ARGS(&m_CmdAllocator)));
+    }
 
+    ID3D12CommandAllocator* CommandAllocator::GetD3D12CommandAllocatorPtr() const
+    { return m_CmdAllocator.Get(); }
+
+    Microsoft::WRL::ComPtr<ID3D12CommandAllocator>& CommandAllocator::GetD3D12CommandAllocator()
+    {
+        return m_CmdAllocator;
     }
 
     void CommandAllocator::Reset()

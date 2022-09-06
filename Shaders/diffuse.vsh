@@ -5,16 +5,7 @@ struct ModelViewProjection
 
 struct DirectionalLight
 {
-    float3 LightDirection;
-    float3 AmbientLightColor;
-    float3 DiffuseLightColor;
-    float3 SpecularLightColor;
-    float Shininess;
-};
 
-struct Camera
-{
-    float3 CameraPosition;
 };
 
 ConstantBuffer<ModelViewProjection> ModelViewProjectionCB : register(b0);
@@ -34,6 +25,6 @@ struct VertexShaderOutput
 void main(in VertexShaderInput VSIn,
     out VertexShaderOutput VSOut)
 {
-    VSOut.Position = mul(ModelViewProjectionCB.MVP,float4(VSIn.Position,1.0f));
-    VSOut.Color = float4(VSIn.Color,1.0f);
+    VSOut.Position = mul(ModelViewProjectionCB.MVP, float4(VSIn.Position, 1.0f));
+    VSOut.Color = float4(VSIn.Color, 1.0f);
 }

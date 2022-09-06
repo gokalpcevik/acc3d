@@ -9,6 +9,7 @@
 #include "../Graphics/Renderer.h"
 #include "../Graphics/RendererFactory.h"
 #include "../ECS/Scene.h"
+#include "../ECS/Entity.h"
 
 namespace acc3d::Core
 {

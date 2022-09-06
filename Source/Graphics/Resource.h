@@ -13,6 +13,10 @@ namespace acc3d::Graphics
 		Resource(ID3D12Device* pDevice, D3D12_HEAP_PROPERTIES const* pHeapProperties, D3D12_HEAP_FLAGS HeapFlags, 
 			D3D12_RESOURCE_DESC const* pDesc, D3D12_RESOURCE_STATES InitialResourceState, 
 			D3D12_CLEAR_VALUE const* pOptimizedClearValue);
+		explicit Resource(Microsoft::WRL::ComPtr<ID3D12Resource>const & resource);
+
+		[[nodiscard]] Microsoft::WRL::ComPtr<ID3D12Resource> & GetResource();
+		[[nodiscard]] ID3D12Resource* GetResourcePtr() const;
 
 		void UpdateBufferResource(ID3D12GraphicsCommandList2* pCmdList, size_t NumElems, size_t ElemSize,
 		                          void const* pBufferData,

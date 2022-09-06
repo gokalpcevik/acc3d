@@ -15,5 +15,6 @@ target_sources(acc3d PRIVATE
     ResultHandler.cpp
     InfoQueue.cpp
     Synchronizer.cpp
+    PipelineState.cpp
     RendererConfiguration.h
     Type.h)

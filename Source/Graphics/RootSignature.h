@@ -17,7 +17,8 @@ namespace acc3d::Graphics
 		                                                  CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC const&
 		                                                  rootSignatureDescription);
 
-		
+		[[nodiscard]] ID3D12RootSignature* GetD3D12RootSignaturePtr();
+		[[nodiscard]] Microsoft::WRL::ComPtr<ID3D12RootSignature>& GetD3D12RootSignature();
 	private:
 
 		Microsoft::WRL::ComPtr<ID3D12RootSignature> m_RootSignature;

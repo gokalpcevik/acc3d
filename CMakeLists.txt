@@ -11,6 +11,7 @@ find_package(EnTT CONFIG REQUIRED)
 find_package(directxtk12 CONFIG REQUIRED)
 find_package(directxtex CONFIG REQUIRED)
 find_package(directxmath CONFIG REQUIRED)
+find_package(sparsehash CONFIG REQUIRED)
 
 add_executable(${PROJECT_NAME} "Source/Main.cpp")
 
@@ -38,9 +39,11 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     Microsoft::DirectXTK12
     Microsoft::DirectXTex
     Microsoft::DirectXMath
+    sparsehash::sparsehash
     )
 
 find_path(D3DX12_INCLUDE_DIRS "d3dx12.h")
+
 target_include_directories(${PROJECT_NAME} PRIVATE ${D3DX12_INCLUDE_DIRS})
 
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD

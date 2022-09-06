@@ -25,12 +25,16 @@ namespace acc3d::Graphics
 
         void Reset(ID3D12CommandAllocator *pAllocator, ID3D12PipelineState *pPSO);
 
-        [[nodiscard]] ID3D12GraphicsCommandList *GetGraphicsCommandList() const;
-        [[nodiscard]] Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList2> GetGraphicsCommandList2()
-        const;
+        void Close();
+
+        [[nodiscard]] D3D12_COMMAND_LIST_TYPE GetCommandListType() const;
+
+        [[nodiscard]] ID3D12GraphicsCommandList2 *GetD3D12GraphicsCommandListPtr() const;
+        [[nodiscard]] Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList2>& GetD3D12GraphicsCommandList();
 
     private:
-        Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> m_CmdList;
+        Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList2> m_CmdList;
+        D3D12_COMMAND_LIST_TYPE m_CmdListType{};
     };
 
 } // Graphics

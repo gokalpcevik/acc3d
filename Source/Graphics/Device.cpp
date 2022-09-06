@@ -123,8 +123,14 @@ namespace acc3d::Graphics
         return tearingAllowed == TRUE;
     }
 
-    ID3D12Device *Device::GetD3D12Device()
+    ID3D12Device *Device::GetD3D12DevicePtr()
     { return m_Device.Get(); }
+
+    Microsoft::WRL::ComPtr<ID3D12Device2> Device::GetD3D12Device2()
+    {
+        ComPtr<ID3D12Device2> device2; m_Device.As(&device2);
+        return device2;
+    }
 
     IDXGIFactory3 *Device::GetDXGIFactory()
     { return m_DXGIFactory.Get(); }
