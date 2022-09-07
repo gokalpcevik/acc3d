@@ -3,20 +3,6 @@ struct ModelViewProjection
     matrix MVP;
 };
 
-struct DirectionalLight
-{
-    float3 LightDirection;
-    float3 AmbientLightColor;
-    float3 DiffuseLightColor;
-    float3 SpecularLightColor;
-    float Shininess;
-};
-
-struct Camera
-{
-    float3 CameraPosition;
-};
-
 ConstantBuffer<ModelViewProjection> ModelViewProjectionCB : register(b0);
 
 struct VertexShaderInput
