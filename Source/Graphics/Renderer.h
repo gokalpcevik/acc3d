@@ -28,21 +28,20 @@
 #include "../AssetCore/MeshLibrary.h"
 #include "../Core/Window.h"
 #include "../ECS/Scene.h"
-#include "../Util/RandomGenerator.h"
 
 #undef NOMINMAX
 
 namespace acc3d::Graphics
 {
-    template<typename T>
-    using Scope = std::unique_ptr<T>;
+
 
     struct Drawable
     {
         Asset::MeshAssetId AssetId;
+        RendererId RendererId = RENDERER_ID_EMPTY_VALUE;
 
-        Scope<Resource> VertexBuffer;
-        Scope<Resource> IndexBuffer;
+        std::unique_ptr<Resource> VertexBuffer;
+        std::unique_ptr<Resource> IndexBuffer;
         D3D12_VERTEX_BUFFER_VIEW VertexBufferView;
         D3D12_INDEX_BUFFER_VIEW IndexBufferView;
 
@@ -55,9 +54,9 @@ namespace acc3d::Graphics
  *
  */
 
-        Scope<RootSignature> RootSignature;
+        std::unique_ptr<RootSignature> RootSignature;
 
-        Scope<PipelineState> PipelineStateObject;
+        std::unique_ptr<PipelineState> PipelineStateObject;
         /*
  * Pipeline state object is used to describe how the graphics/compute pipeline will behave
  * in every pipeline stage when we are going to render something.
@@ -130,7 +129,7 @@ namespace acc3d::Graphics
 
         virtual ~Renderer();
 
-        void Render(FLOAT const *clearColor);
+        void Clear(FLOAT const *clearColor);
 
         void Resize(uint32_t width, uint32_t height);
 
@@ -146,21 +145,25 @@ namespace acc3d::Graphics
 
         [[nodiscard]] std::unique_ptr<Device> const &GetDevice() const;
 
-        static RendererId GenerateRendererId();
+    	RendererId GenerateRendererId();
 
         void LoadTestScene();
 
+        // This function is not ideal because every time this gets called, we have to perform a flush followed by a stall
+        // for the copy operation of the buffers/resources. An ideal mesh renderer component register function would be
+        // to possible combine several components into a range, record all the copy commands required for the creation of
+        // the drawable object; and then wait until the copy command queue finishes.
         void RegisterMeshRendererComponentDrawable(RendererId id, Asset::MeshAssetId meshAssetId);
         void DeregisterMeshRendererComponentDrawable(RendererId id);
     private:
         Core::Window const *m_Window{nullptr};
 
-/*--------------PRESENT / CLEAR / RENDERING -------------*/
+/*--------------PRESENT / CLEAR / RENDERING -----------------------*/
         std::unique_ptr<Device> m_Device;
         std::unique_ptr<SwapChain> m_SwapChain;
         std::unique_ptr<CommandQueue> m_DirectCmdQueue;
         std::unique_ptr<CommandQueue> m_CopyCmdQueue;
-        std::unique_ptr<GraphicsCommandList> m_GfxCmdList;
+        std::unique_ptr<CommandList> m_GfxCmdList;
         std::unique_ptr<Resource> m_BackBuffers[g_NUM_FRAMES_IN_FLIGHT];
         std::unique_ptr<Resource> m_DepthBuffer;
         std::unique_ptr<CommandAllocator> m_GfxCmdAllocators[g_NUM_FRAMES_IN_FLIGHT];
@@ -183,19 +186,26 @@ namespace acc3d::Graphics
 
 
 /* --------------------SYNCHRONIZATION-----------------------------*/
-        std::unique_ptr<Fence> m_DirectFence;
+        std::unique_ptr<Fence> m_Fence;
         uint64_t m_FenceValue = 0;
         uint64_t m_FrameFenceValues[g_NUM_FRAMES_IN_FLIGHT] = {};
-        HANDLE m_DirectFenceEvent = INVALID_HANDLE_VALUE;
-/*------------------------------------------------------------------*/
+        HANDLE m_FenceEvent = INVALID_HANDLE_VALUE;
 
-/*---------------------TEST CUBE DEMO SCENE VARIABLES---------------*/
+        std::unique_ptr<Fence> m_CopyFence;
+        uint64_t m_CopyFenceValue = 0;
+        HANDLE m_CopyFenceEvent = INVALID_HANDLE_VALUE;
+/*-----------------------------------------------------------------*/
+
+/*---------------------TEST CUBE DEMO SCENE VARIABLES--------------*/
         MeshRenderInfo m_CubeInfo;
-/*------------------------------------------------------------------*/
+/*-----------------------------------------------------------------*/
 
-        RendererPresentMethod m_PresentMethod{};
+        RendererPresentMethod m_PresentMethod{true};
 
         google::dense_hash_map<RendererId, Drawable*> m_DrawableMap;
+        // This should be atomically increased as we generate a renderer id, that is when we switch to a
+        // multi-threaded renderer architecture
+    	RendererId m_RendererIdValue = 2;
 
         friend class RendererFactory;
     };

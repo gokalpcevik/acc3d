@@ -55,14 +55,16 @@ namespace acc3d::Graphics
         pRenderer->m_SwapChain = std::move(pSwapChain);
         pRenderer->m_DirectCmdQueue = std::move(pCmdQueue);
         pRenderer->m_CopyCmdQueue = std::move(pCopyCmdQueue);
-        pRenderer->m_DirectFence = std::move(pDirectFence);
-        pRenderer->m_DescriptorHeapSizeInfo = descriptorHeapSizeInfo;
+        pRenderer->m_Fence = std::move(pDirectFence);
+        pRenderer->m_CopyFence = std::move(pCopyFence);
+        pRenderer->m_CopyFenceEvent = Fence::CreateFenceEventHandle();
+    	pRenderer->m_DescriptorHeapSizeInfo = descriptorHeapSizeInfo;
         pRenderer->m_RTVDescriptorHeap = std::move(RTVDescriptorHeap);
         pRenderer->m_DSVDescriptorHeap = std::move(DSVDescriptorHeap);
     	pRenderer->m_Window = &window;
-        pRenderer->m_DirectFenceEvent = Fence::CreateFenceEventHandle();
+        pRenderer->m_FenceEvent = Fence::CreateFenceEventHandle();
         pRenderer->m_Viewport = CD3DX12_VIEWPORT(0.0f, 0.0f, window.GetSurfaceWidth(), window.GetSurfaceHeight(), 0.0f, 1.0f);
-
+		
 #if defined(_DEBUG) || defined(DEBUG)
         auto pInfoQueue = std::make_unique<InfoQueue>(pRenderer->GetDevice()->GetD3D12DevicePtr());
         pRenderer->m_InfoQueue = std::move(pInfoQueue);
@@ -73,7 +75,7 @@ namespace acc3d::Graphics
             m_CmdAllocator = std::make_unique<CommandAllocator>(
                     pRenderer->m_Device->GetD3D12DevicePtr(), D3D12_COMMAND_LIST_TYPE_DIRECT);
         }
-        pRenderer->m_GfxCmdList = std::make_unique<GraphicsCommandList>(
+        pRenderer->m_GfxCmdList = std::make_unique<CommandList>(
                 pRenderer->m_Device->GetD3D12DevicePtr(),
                 pRenderer->m_GfxCmdAllocators[pRenderer->m_CurrentBackBufferIndex]->GetD3D12CommandAllocatorPtr(),
                 D3D12_COMMAND_LIST_TYPE_DIRECT,

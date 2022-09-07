@@ -5,18 +5,18 @@
 #include <cstdint>
 #include <tuple>
 #include <optional>
+#include "Type.h"
 #include "ResultHandler.h"
 #include "ShaderCompiler.h"
 #include "../Core/Log.h"
 
 namespace acc3d::Graphics
 {
-	using ShaderCompilationEntryId = size_t;
 
 	/*
 	 * There is chance that this value will clash with the hash value of a shader path but practically it is extremely low.
 	 */
-	static constexpr ShaderCompilationEntryId SHADER_COMPILATION_ENTRY_INVALID_ID = 0;
+	static constexpr ShaderId SHADER_COMPILATION_ENTRY_INVALID_ID = 0;
 
 	class ShaderLibrary
 	{
@@ -24,17 +24,17 @@ namespace acc3d::Graphics
 		ShaderLibrary() = default;
 		ShaderLibrary(const ShaderLibrary&) = delete;
 
-		static std::tuple<ShaderCompilationEntryId, ShaderCompilationEntry> CompileAndLoad(const ShaderCompilationParameters& params);
+		static std::tuple<ShaderId, ShaderCompilationEntry> CompileAndLoad(const ShaderCompilationParameters& params);
 
-		static const ShaderCompilationEntry& GetCompilationEntry(ShaderCompilationEntryId id);
+		static const ShaderCompilationEntry& GetCompilationEntry(ShaderId id);
 
-		static void RemoveCompilationEntry(ShaderCompilationEntryId id);
+		static void RemoveCompilationEntry(ShaderId id);
 
-		static ShaderCompilationEntryId ShaderPathToId(const std::filesystem::path& path);
+		static ShaderId ShaderPathToId(const std::filesystem::path& path);
 
-		static bool IsLoaded(ShaderCompilationEntryId id);
+		static bool IsLoaded(ShaderId id);
 
 	private:
-		static std::unordered_map<ShaderCompilationEntryId, ShaderCompilationEntry> s_ShaderIdMap;
+		static std::unordered_map<ShaderId, ShaderCompilationEntry> s_ShaderIdMap;
 	};
 } // Graphics

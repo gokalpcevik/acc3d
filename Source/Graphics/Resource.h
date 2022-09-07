@@ -9,18 +9,24 @@ namespace acc3d::Graphics
 	class Resource
 	{
 	public:
+		explicit Resource(ID3D12Device* pDevice);
+
+		explicit Resource(Microsoft::WRL::ComPtr<ID3D12Resource>const & resource);
+
 		// Constructor for committed resources
 		Resource(ID3D12Device* pDevice, D3D12_HEAP_PROPERTIES const* pHeapProperties, D3D12_HEAP_FLAGS HeapFlags, 
-			D3D12_RESOURCE_DESC const* pDesc, D3D12_RESOURCE_STATES InitialResourceState, 
-			D3D12_CLEAR_VALUE const* pOptimizedClearValue);
-		explicit Resource(Microsoft::WRL::ComPtr<ID3D12Resource>const & resource);
+		         D3D12_RESOURCE_DESC const* pDesc, D3D12_RESOURCE_STATES InitialResourceState, 
+		         D3D12_CLEAR_VALUE const* pOptimizedClearValue);
 
 		[[nodiscard]] Microsoft::WRL::ComPtr<ID3D12Resource> & GetResource();
 		[[nodiscard]] ID3D12Resource* GetResourcePtr() const;
 
+		[[nodiscard]] D3D12_GPU_VIRTUAL_ADDRESS GetGPUVirtualAddress() const;
+
 		void UpdateBufferResource(ID3D12GraphicsCommandList2* pCmdList, size_t NumElems, size_t ElemSize,
 		                          void const* pBufferData,
 		                          D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE);
+
 
 		void TransitionAndBarrier(ID3D12GraphicsCommandList2* pGfxCmdList, D3D12_RESOURCE_STATES stateBefore,
 		                          D3D12_RESOURCE_STATES stateAfter) const;

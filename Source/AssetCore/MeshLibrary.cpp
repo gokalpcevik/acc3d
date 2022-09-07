@@ -4,6 +4,23 @@ namespace acc3d::Asset
 {
     std::unordered_map<MeshAssetId, MeshAssetContent> MeshLibrary::s_MeshIdMap{};
 
+    MeshAssetId MeshLibrary::operator()(const fls::path& path) const
+    {
+        MeshAssetId id = std::filesystem::hash_value(path);
+        if (MeshLibrary::IsLoaded(MeshLibrary::GetIdFromPath(path)))
+        {
+            return id;
+        }
+        MeshImporter const importer(path);
+        if (!importer.ImportSucceeded())
+        {
+            acc3d_error("Error loading mesh into the mesh library cache: {0}", path.string());
+            return 0;
+        }
+        s_MeshIdMap[id] = *importer;
+        return id;
+    }
+
     std::tuple<MeshAssetId, MeshAssetContent> MeshLibrary::Load(const fls::path &path)
     {
         MeshAssetId id = std::filesystem::hash_value(path);

@@ -4,9 +4,14 @@ namespace acc3d::Graphics
 {
 	using Microsoft::WRL::ComPtr;
 
+	Resource::Resource(ID3D12Device* pDevice)
+		: m_Device(pDevice)
+	{
+	}
+
 	Resource::Resource(ID3D12Device* pDevice, D3D12_HEAP_PROPERTIES const* pHeapProperties, D3D12_HEAP_FLAGS HeapFlags,
-		D3D12_RESOURCE_DESC const* pDesc, D3D12_RESOURCE_STATES InitialResourceState,
-		D3D12_CLEAR_VALUE const* pOptimizedClearValue)
+	                   D3D12_RESOURCE_DESC const* pDesc, D3D12_RESOURCE_STATES InitialResourceState,
+	                   D3D12_CLEAR_VALUE const* pOptimizedClearValue)
 	: m_Device(pDevice)
 	{
 		THROW_IFF(pDevice->CreateCommittedResource(pHeapProperties, HeapFlags, pDesc, InitialResourceState, pOptimizedClearValue,
@@ -26,6 +31,11 @@ namespace acc3d::Graphics
 	ID3D12Resource* Resource::GetResourcePtr() const
 	{
 		return m_Resource.Get();
+	}
+
+	D3D12_GPU_VIRTUAL_ADDRESS Resource::GetGPUVirtualAddress() const
+	{
+		return m_Resource->GetGPUVirtualAddress();
 	}
 
 	void Resource::UpdateBufferResource(ID3D12GraphicsCommandList2* pCmdList, size_t NumElems, size_t ElemSize,

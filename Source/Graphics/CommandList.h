@@ -12,16 +12,16 @@ namespace acc3d::Graphics
      * immediately but rather executed when they are executed on the command queue.
      * */
 
-    class GraphicsCommandList
+    class CommandList
     {
     public:
         // Type parameter must be of the same value as the CommandAllocator's command list type.
-        GraphicsCommandList(ID3D12Device *pDevice, ID3D12CommandAllocator *pAllocator,
+        CommandList(ID3D12Device *pDevice, ID3D12CommandAllocator *pAllocator,
                             D3D12_COMMAND_LIST_TYPE type, ID3D12PipelineState *pInitialState);
 
-        GraphicsCommandList(const GraphicsCommandList &) = delete;
+        CommandList(const CommandList &) = delete;
 
-        GraphicsCommandList(GraphicsCommandList &&) = default;
+        CommandList(CommandList &&) = default;
 
         void Reset(ID3D12CommandAllocator *pAllocator, ID3D12PipelineState *pPSO);
 

@@ -6,12 +6,12 @@
 
 namespace acc3d::Graphics
 {
-    std::unordered_map<ShaderCompilationEntryId, ShaderCompilationEntry> ShaderLibrary::s_ShaderIdMap{};
+    std::unordered_map<ShaderId, ShaderCompilationEntry> ShaderLibrary::s_ShaderIdMap{};
 
 
-    std::tuple<ShaderCompilationEntryId, ShaderCompilationEntry> ShaderLibrary::CompileAndLoad(const ShaderCompilationParameters& params)
+    std::tuple<ShaderId, ShaderCompilationEntry> ShaderLibrary::CompileAndLoad(const ShaderCompilationParameters& params)
     {
-        ShaderCompilationEntryId id = ShaderLibrary::ShaderPathToId(params.ShaderPath);
+        ShaderId id = ShaderLibrary::ShaderPathToId(params.ShaderPath);
         if(IsLoaded(id))
         {
             return { id,GetCompilationEntry(id) };
@@ -26,22 +26,22 @@ namespace acc3d::Graphics
         return { SHADER_COMPILATION_ENTRY_INVALID_ID, ShaderCompilationEntry{nullptr,nullptr,ShaderType::Invalid} };
     }
 
-    ShaderCompilationEntry const& ShaderLibrary::GetCompilationEntry(ShaderCompilationEntryId id)
+    ShaderCompilationEntry const& ShaderLibrary::GetCompilationEntry(ShaderId id)
     {
         return s_ShaderIdMap[id];
     }
 
-    void ShaderLibrary::RemoveCompilationEntry(ShaderCompilationEntryId id)
+    void ShaderLibrary::RemoveCompilationEntry(ShaderId id)
     {
         s_ShaderIdMap.erase(id);
     }
 
-    ShaderCompilationEntryId ShaderLibrary::ShaderPathToId(const std::filesystem::path& path)
+    ShaderId ShaderLibrary::ShaderPathToId(const std::filesystem::path& path)
     {
         return std::filesystem::hash_value(path);
     }
 
-    bool ShaderLibrary::IsLoaded(ShaderCompilationEntryId id)
+    bool ShaderLibrary::IsLoaded(ShaderId id)
     {
         return s_ShaderIdMap.find(id) != s_ShaderIdMap.end();
     }

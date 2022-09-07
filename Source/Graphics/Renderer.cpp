@@ -5,7 +5,7 @@ namespace acc3d::Graphics
 	using Microsoft::WRL::ComPtr;
 	using namespace DirectX;
 
-	void Renderer::Render(const FLOAT* clearColor)
+	void Renderer::Clear(const FLOAT* clearColor)
 	{
 		// Update the model matrix.
 
@@ -110,13 +110,13 @@ namespace acc3d::Graphics
  * Wait if the next frame is not ready to begin yet.
  */
 		m_FrameFenceValues[m_CurrentBackBufferIndex] = Synchronizer::IncrementAndSignal(
-			m_DirectCmdQueue->GetD3D12CommandQueuePtr(), m_DirectFence->GetD3D12FencePtr(), m_FenceValue);
+			m_DirectCmdQueue->GetD3D12CommandQueuePtr(), m_Fence->GetD3D12FencePtr(), m_FenceValue);
 
 		m_CurrentBackBufferIndex = m_SwapChain->GetCurrentBackBufferIndex();
 
-		Synchronizer::WaitForFenceValue(m_DirectFence->GetD3D12FencePtr(),
+		Synchronizer::WaitForFenceValue(m_Fence->GetD3D12FencePtr(),
 		                                m_FrameFenceValues[m_CurrentBackBufferIndex],
-		                                m_DirectFenceEvent);
+		                                m_FenceEvent);
 
 #if defined(_DEBUG) || defined(DEBUG)
 		m_InfoQueue->FlushQueue();
@@ -160,21 +160,20 @@ namespace acc3d::Graphics
 		for (auto entity : group)
 		{
 			auto [tc, mrc] = group.get(entity);
-
-			auto const& rendererId = ECS::RendererIdAccessor()(mrc);
+			auto* drawable = m_DrawableMap[ECS::RIDAccessor()(mrc)];
 		}
 	}
 
 
 	Renderer::~Renderer()
 	{
-		Synchronizer::Flush(m_DirectCmdQueue->GetD3D12CommandQueuePtr(), m_DirectFence->GetD3D12FencePtr(), m_FenceValue,
-		                    m_DirectFenceEvent);
+		Synchronizer::Flush(m_DirectCmdQueue->GetD3D12CommandQueuePtr(), m_Fence->GetD3D12FencePtr(), m_FenceValue,
+		                    m_FenceEvent);
 	}
 
 	void Renderer::Resize(uint32_t width,uint32_t height)
 	{
-		Synchronizer::Flush(m_DirectCmdQueue->GetD3D12CommandQueuePtr(), m_DirectFence->GetD3D12FencePtr(), m_FenceValue, m_DirectFenceEvent);
+		Synchronizer::Flush(m_DirectCmdQueue->GetD3D12CommandQueuePtr(), m_Fence->GetD3D12FencePtr(), m_FenceValue, m_FenceEvent);
 		for (size_t i = 0; i < g_NUM_FRAMES_IN_FLIGHT; ++i)
 		{
 			m_BackBuffers[i]->GetResource().Reset();
@@ -232,11 +231,7 @@ namespace acc3d::Graphics
 		return m_Device;
 	}
 
-	RendererId Renderer::GenerateRendererId()
-	{
-		RendererId const id = Util::RandomGenerator::RandomUInt64();
-		return (id == RENDERER_ID_EMPTY_VALUE || id == RENDERER_ID_DELETED_VALUE) ? GenerateRendererId() : id;
-	}
+	
 
 	void Renderer::LoadTestScene()
 	{
@@ -244,11 +239,11 @@ namespace acc3d::Graphics
 
 		m_CubeInfo.FOV = 45.0f;
 
-		std::unique_ptr<GraphicsCommandList> m_LoadCmdList;
+		std::unique_ptr<CommandList> m_LoadCmdList;
 		std::unique_ptr<CommandAllocator> m_LoadCmdAllocator;
 
 		m_LoadCmdAllocator = std::make_unique<CommandAllocator>(pDevice.Get(), D3D12_COMMAND_LIST_TYPE_COPY);
-		m_LoadCmdList = std::make_unique<GraphicsCommandList>(pDevice.Get(), m_LoadCmdAllocator->GetD3D12CommandAllocatorPtr(),
+		m_LoadCmdList = std::make_unique<CommandList>(pDevice.Get(), m_LoadCmdAllocator->GetD3D12CommandAllocatorPtr(),
 			D3D12_COMMAND_LIST_TYPE_COPY, nullptr);
 		m_LoadCmdList->Reset(m_LoadCmdAllocator->GetD3D12CommandAllocatorPtr(), nullptr);
 
@@ -257,8 +252,9 @@ namespace acc3d::Graphics
 		m_CubeInfo.indicesCount = meshData.Indices.size();
 
 		ComPtr<ID3D12Resource> intermediateVertexBuffer;
-		Resource::UpdateBufferResource(m_Device->GetD3D12DevicePtr(),m_LoadCmdList->GetD3D12GraphicsCommandListPtr(), &m_CubeInfo.VertexBuffer, &intermediateVertexBuffer,
-			meshData.Vertices.size(), sizeof(Vertex), meshData.Vertices.data());
+		Resource::UpdateBufferResource(m_Device->GetD3D12DevicePtr(), m_LoadCmdList->GetD3D12GraphicsCommandListPtr(),
+		                               &m_CubeInfo.VertexBuffer, &intermediateVertexBuffer,
+		                               meshData.Vertices.size(), sizeof(Vertex), meshData.Vertices.data());
 
 		m_CubeInfo.VertexBufferView.BufferLocation = m_CubeInfo.VertexBuffer->GetGPUVirtualAddress();
 		m_CubeInfo.VertexBufferView.SizeInBytes = meshData.Vertices.size() * sizeof(Vertex);
@@ -266,8 +262,9 @@ namespace acc3d::Graphics
 
 		ComPtr<ID3D12Resource> intermediateIndexBuffer;
 
-		Resource::UpdateBufferResource(m_Device->GetD3D12DevicePtr(), m_LoadCmdList->GetD3D12GraphicsCommandListPtr(), &m_CubeInfo.IndexBuffer, &intermediateIndexBuffer,
-			meshData.Indices.size(), sizeof(uint32_t), meshData.Indices.data());
+		Resource::UpdateBufferResource(m_Device->GetD3D12DevicePtr(), m_LoadCmdList->GetD3D12GraphicsCommandListPtr(),
+		                               &m_CubeInfo.IndexBuffer, &intermediateIndexBuffer,
+		                               meshData.Indices.size(), sizeof(uint32_t), meshData.Indices.data());
 
 		m_CubeInfo.IndexBufferView.BufferLocation = m_CubeInfo.IndexBuffer->GetGPUVirtualAddress();
 		m_CubeInfo.IndexBufferView.SizeInBytes = meshData.Indices.size() * sizeof(uint32_t);
@@ -336,16 +333,73 @@ namespace acc3d::Graphics
 		m_LoadCmdList->GetD3D12GraphicsCommandListPtr()->Close();
 		ID3D12CommandList* const commandLists[] = { m_LoadCmdList->GetD3D12GraphicsCommandListPtr() };
 		m_CopyCmdQueue->GetD3D12CommandQueuePtr()->ExecuteCommandLists(1UL, commandLists);
-		Synchronizer::IncrementAndSignal(m_CopyCmdQueue->GetD3D12CommandQueuePtr(), m_DirectFence->GetD3D12FencePtr(), m_FenceValue);
-		Synchronizer::WaitForFenceValue(m_DirectFence->GetD3D12FencePtr(), m_FenceValue, m_DirectFenceEvent);
+		Synchronizer::IncrementAndSignal(m_CopyCmdQueue->GetD3D12CommandQueuePtr(), m_Fence->GetD3D12FencePtr(), m_FenceValue);
+		Synchronizer::WaitForFenceValue(m_Fence->GetD3D12FencePtr(), m_FenceValue, m_FenceEvent);
+	}
+
+	RendererId Renderer::GenerateRendererId()
+	{
+		return m_RendererIdValue++;
 	}
 
 	void Renderer::RegisterMeshRendererComponentDrawable(RendererId id,Asset::MeshAssetId meshAssetId)
 	{
+		ComPtr<ID3D12Device2> const& device = m_Device->GetD3D12Device2();
+
+		const std::unique_ptr<CommandAllocator> m_LoadCmdAllocator = std::make_unique<CommandAllocator>(device.Get(),
+		                                                                                                D3D12_COMMAND_LIST_TYPE_COPY);
+		const std::unique_ptr<CommandList> m_LoadCmdList = std::make_unique<CommandList>(
+			device.Get(), m_LoadCmdAllocator->GetD3D12CommandAllocatorPtr(),
+			D3D12_COMMAND_LIST_TYPE_COPY, nullptr);
+
+		// Reset the command list and set an open state as we will be recording copy commands for the drawable object.
+		m_LoadCmdList->Reset(m_LoadCmdAllocator->GetD3D12CommandAllocatorPtr(), nullptr);
+
+		const auto& cmdList = m_LoadCmdList->GetD3D12GraphicsCommandList();
+
 		Drawable* drawable = new Drawable();
+		auto& [Vertices, Indices] = Asset::MeshLibrary::Retrieve(meshAssetId);
+
+		assert(Vertices.size() > 0 && Indices.size() > 0);
+
+		drawable->VertexBuffer = std::make_unique<Resource>(device.Get());
+		drawable->IndexBuffer = std::make_unique<Resource>(device.Get());
+
+		const std::unique_ptr vertexBufferIntermediateResource = std::make_unique<Resource>(device.Get());
+		Resource::UpdateBufferResource(device.Get(), cmdList.Get(), *drawable->VertexBuffer, *vertexBufferIntermediateResource,
+			Vertices.size(), sizeof(Vertex), Vertices.data());
+
+		const std::unique_ptr indexBufferIntermediateResource = std::make_unique<Resource>(device.Get());
+		Resource::UpdateBufferResource(device.Get(), cmdList.Get(), *drawable->IndexBuffer, *indexBufferIntermediateResource,
+			Indices.size(), sizeof(uint32_t), Indices.data());
+		
+		drawable->VertexBufferView.BufferLocation = drawable->VertexBuffer->GetGPUVirtualAddress();
+		drawable->VertexBufferView.SizeInBytes = Vertices.size() * sizeof(Vertex);
+		drawable->VertexBufferView.StrideInBytes = sizeof(Vertex);
+
+		drawable->IndexBufferView.BufferLocation = drawable->IndexBuffer->GetGPUVirtualAddress();
+		drawable->IndexBufferView.SizeInBytes = Indices.size() * sizeof(uint32_t);
+		drawable->IndexBufferView.Format = DXGI_FORMAT_R32_UINT;
+
+
+		m_LoadCmdList->GetD3D12GraphicsCommandListPtr()->Close();
+		ID3D12CommandList* const commandLists[] = { m_LoadCmdList->GetD3D12GraphicsCommandListPtr() };
+
+		Synchronizer::Flush(m_DirectCmdQueue->GetD3D12CommandQueuePtr(), m_Fence->GetD3D12FencePtr(),
+			m_FenceValue, m_FenceEvent);
+
+		m_CopyCmdQueue->GetD3D12CommandQueuePtr()->ExecuteCommandLists(1UL, commandLists);
+		Synchronizer::IncrementAndSignal(m_CopyCmdQueue->GetD3D12CommandQueuePtr(), m_CopyFence->GetD3D12FencePtr(), m_CopyFenceValue);
+		Synchronizer::WaitForFenceValue(m_CopyFence->GetD3D12FencePtr(), m_CopyFenceValue, m_CopyFenceEvent);
+
+		m_DrawableMap[id] = drawable;
 	}
 
 	void Renderer::DeregisterMeshRendererComponentDrawable(RendererId id)
 	{
+		Synchronizer::Flush(m_DirectCmdQueue->GetD3D12CommandQueuePtr(), m_Fence->GetD3D12FencePtr(),
+			m_FenceValue, m_FenceEvent);
+
+		delete m_DrawableMap[id];
 	}
 }

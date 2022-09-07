@@ -29,6 +29,37 @@ namespace acc3d::Graphics
 		m_DXGIInfoQueue->ClearStorageFilter(DXGI_DEBUG_ALL);
 		m_DXGIInfoQueue->PushEmptyStorageFilter(DXGI_DEBUG_ALL);
 		m_DXGIInfoQueue->PushEmptyRetrievalFilter(DXGI_DEBUG_ALL);
+
+/*
+ *There is a bug in the DXGI Debug Layer interaction with the DX12 Debug Layer w/ Windows 11.
+ */
+
+		{
+			DXGI_INFO_QUEUE_MESSAGE_ID hide[] =
+			{
+				80 /* IDXGISwapChain::GetContainingOutput: The swapchain's adapter does not control the output on which the swapchain's window resides. */,
+			};
+
+			DXGI_INFO_QUEUE_FILTER filter = {};
+			filter.DenyList.NumIDs = static_cast<UINT>(std::size(hide));
+			filter.DenyList.pIDList = hide;
+			m_DXGIInfoQueue->AddStorageFilterEntries(DXGI_DEBUG_DXGI, &filter);
+		}
+
+		{
+			D3D12_MESSAGE_ID hide[] =
+			{
+				D3D12_MESSAGE_ID_MAP_INVALID_NULLRANGE,
+				D3D12_MESSAGE_ID_UNMAP_INVALID_NULLRANGE,
+				// Workarounds for debug layer issues on hybrid-graphics systems
+				D3D12_MESSAGE_ID_EXECUTECOMMANDLISTS_WRONGSWAPCHAINBUFFERREFERENCE,
+				D3D12_MESSAGE_ID_RESOURCE_BARRIER_MISMATCHING_COMMAND_LIST_TYPE,
+			};
+			D3D12_INFO_QUEUE_FILTER filter = {};
+			filter.DenyList.NumIDs = static_cast<UINT>(std::size(hide));
+			filter.DenyList.pIDList = hide;
+			m_InfoQueue->AddStorageFilterEntries(&filter);
+		}
 	}
 
 	void InfoQueue::FlushQueue() const

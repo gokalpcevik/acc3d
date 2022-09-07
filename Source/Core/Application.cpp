@@ -36,8 +36,7 @@ namespace acc3d::Core
             return -1;
 
         m_Scene = std::make_unique<ECS::Scene>(m_Renderer.get());
-        auto entity = m_Scene->CreateEntity();
-        auto& mrc = entity.AddComponent<ECS::MeshRendererComponent>();
+        
 
         return Update();
     }
@@ -80,11 +79,30 @@ namespace acc3d::Core
                             m_Running = false;
                             break;
                         }
+
+                        if (m_Window->GetEvent().key.keysym.sym == SDLK_F1)
+                        {
+                            auto entity = m_Scene->CreateEntity();
+                        	auto id = Asset::MeshLibrary()("Assets/sphere.obj");
+                            entity.AddComponent<ECS::MeshRendererComponent>(id);
+                            break;
+                        }
+                        if (m_Window->GetEvent().key.keysym.sym == SDLK_F2)
+                        {
+                            m_Scene->DestroyAllComponentsOfType<ECS::MeshRendererComponent>();
+                            break;
+                        }
                     }
                 }
             }
-            const FLOAT clearColor[] = {0.05f, 0.05f, 0.05f, 1.0f};
-            m_Renderer->Render(clearColor);
+            m_Window->SetTitle(fmt::format("FPS: {0:.2f}",m_Stats.GetFramesPerSecond()).c_str());
+
+
+            const FLOAT clearColor[] = {0.1f, 0.1f, 0.1f, 1.0f};
+
+            m_Renderer->Clear(clearColor);
+            m_Renderer->RenderScene(*m_Scene);
+
         }
         SDL_Quit();
         return 0;

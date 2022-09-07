@@ -5,9 +5,10 @@
 namespace acc3d::Graphics
 {
 	using RendererId = uint64_t;
+	using ShaderId = size_t;
 
 	/*
-	* This value is guaranteed to never clash with any of the current or future components in the scene.
+	* This values are guaranteed to never clash with any of the current or future components in the scene.
 	*/
 	static constexpr RendererId RENDERER_ID_EMPTY_VALUE = 0;
 	static constexpr RendererId RENDERER_ID_DELETED_VALUE = 1;

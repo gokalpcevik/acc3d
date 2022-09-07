@@ -20,9 +20,11 @@ namespace acc3d::Asset
 
         MeshLibrary(const MeshLibrary &) = delete;
 
+        MeshAssetId operator()(const fls::path& path) const;
+
         // USAGE NOTE: Check the imported mesh data vector sizes to confirm the import
         // succeeded.
-        static std::tuple<MeshAssetId, MeshAssetContent> Load(const fls::path &path);
+        static std::tuple<MeshAssetId, MeshAssetContent> Load(const fls::path& path);
 
         static std::optional<MeshAssetContent> CheckedCopy(MeshAssetId id);
 

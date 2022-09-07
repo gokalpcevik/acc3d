@@ -43,6 +43,9 @@ namespace acc3d::ECS
         template<typename T>
         auto RemoveComponent(entt::entity entity) -> void;
 
+        template<typename T>
+        auto DestroyAllComponentsOfType() -> void;
+
     private:
     	void OnConstructMeshRendererComponent(entt::registry& registry, entt::entity entity) const;
     	void OnDestroyMeshRendererComponent(entt::registry& registry, entt::entity entity) const;
@@ -68,5 +71,11 @@ namespace acc3d::ECS
     auto Scene::RemoveComponent(entt::entity entity) -> void
     {
         m_Registry.remove<T>(entity);
+    }
+
+    template <typename T>
+    auto Scene::DestroyAllComponentsOfType() -> void
+    {
+        m_Registry.clear<T>();
     }
 } //
