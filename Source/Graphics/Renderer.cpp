@@ -288,8 +288,9 @@ namespace acc3d::Graphics
 
 		CD3DX12_ROOT_PARAMETER1 rootParameters[1];
 		rootParameters[0].InitAsConstants(sizeof(XMMATRIX) / 4, 0, 0, D3D12_SHADER_VISIBILITY_VERTEX);
-
 		CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDescription;
+
+		
 		rootSignatureDescription.Init_1_1(_countof(rootParameters), rootParameters, 0, nullptr, rootSignatureFlags);
 
 		auto [rootSignatureBlob,rootSignatureErrorBlob] =

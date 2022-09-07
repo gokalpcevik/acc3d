@@ -47,6 +47,7 @@ namespace acc3d::Graphics
     {
         Microsoft::WRL::ComPtr<IDXGISwapChain3> pSwapChain3;
         THROW_IFF(m_DXGISwapChain.As(&pSwapChain3));
+        
         return pSwapChain3->GetCurrentBackBufferIndex();
     }
 

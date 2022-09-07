@@ -36,8 +36,6 @@ namespace acc3d::Graphics
 		uint64_t Register;
 		uint64_t Size;
 		uint64_t AlignedByteOffset;
-
-		
 	};
 
 	class ShaderDataFormatHelper
@@ -54,7 +52,6 @@ namespace acc3d::Graphics
 	{
 	public:
 		explicit VertexLayout(ShaderId id);
-
 	private:
 		std::vector<VertexLayoutElement> m_LayoutElements;
 		uint64_t m_NumInputParameters = 0;
