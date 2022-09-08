@@ -36,7 +36,21 @@ namespace acc3d::Core
             return -1;
 
         m_Scene = std::make_unique<ECS::Scene>(m_Renderer.get());
-        
+
+    	this->m_Donut = m_Scene->CreateEntity();
+        auto id = Asset::MeshLibrary()("Assets/donut.obj");
+        m_Donut.AddComponent<ECS::MeshRendererComponent>(id);
+        auto& tc = m_Donut.GetComponent<ECS::TransformComponent>();
+        tc.Rotation = DirectX::XMQuaternionRotationRollPitchYaw(0.0f, 90.0f, 90.0f);
+
+        this->m_Camera = m_Scene->CreateEntity();
+        auto&cc = m_Camera.AddComponent<ECS::CameraComponent>(true);
+
+    	const DirectX::XMVECTOR eyePosition = DirectX::XMVectorSet(0, 0, -10, 1);
+        const DirectX::XMVECTOR focusPoint = DirectX::XMVectorSet(0, 0, 0, 1);
+        const DirectX::XMVECTOR upDirection = DirectX::XMVectorSet(0, 1, 0, 0);
+        // Look at the donut!
+        cc.ViewMatrix = DirectX::XMMatrixLookAtLH(eyePosition, focusPoint, upDirection);
 
         return Update();
     }
@@ -72,37 +86,52 @@ namespace acc3d::Core
                                 break;
                         }
                     }
-                    case SDL_KEYDOWN:
-                    {
-                        if (m_Window->GetEvent().key.keysym.sym == SDLK_ESCAPE)
-                        {
-                            m_Running = false;
-                            break;
-                        }
-
-                        if (m_Window->GetEvent().key.keysym.sym == SDLK_F1)
-                        {
-                            auto entity = m_Scene->CreateEntity();
-                        	auto id = Asset::MeshLibrary()("Assets/sphere.obj");
-                            entity.AddComponent<ECS::MeshRendererComponent>(id);
-                            break;
-                        }
-                        if (m_Window->GetEvent().key.keysym.sym == SDLK_F2)
-                        {
-                            m_Scene->DestroyAllComponentsOfType<ECS::MeshRendererComponent>();
-                            break;
-                        }
-                    }
                 }
             }
-            m_Window->SetTitle(fmt::format("FPS: {0:.2f}",m_Stats.GetFramesPerSecond()).c_str());
+            
+            if (Input::IsKeyPressed(SDL_SCANCODE_ESCAPE))
+            {
+                m_Running = false;
+            }
+
+            if(Input::IsKeyPressed(SDL_SCANCODE_F1))
+            {
+                m_Scene->DestroyAllComponentsOfType<ECS::MeshRendererComponent>();
+            }
+
+            auto&& cc = m_Camera.GetComponent<ECS::CameraComponent>();
+
+
+            if(Input::IsKeyPressed(SDL_SCANCODE_R))
+            {
+                cc.FOVHalfAngle += 0.001f * m_Stats.GetFrameTime();
+            }
+        	else if(Input::IsKeyPressed(SDL_SCANCODE_T))
+            {
+                cc.FOVHalfAngle -= 0.001f * m_Stats.GetFrameTime();
+            }
+
+
+            m_Window->SetTitle(fmt::format("FPS: {0:.2f}, Created Entities: {1}", m_Stats.GetFramesPerSecond(),
+                                           m_Scene->GetCreatedEntityCount()).c_str());
+            
+
+
+            auto& tc = m_Donut.GetComponent<ECS::TransformComponent>();
+
+            static float time = 0.0f;
+            time += m_Stats.GetFrameTime() / 50000.0f;
+
+            float rotation = std::cos(time) * 90.0f;
+
+            tc.Rotation = DirectX::XMQuaternionRotationRollPitchYaw(0.0f, rotation, rotation);
 
 
             const FLOAT clearColor[] = {0.1f, 0.1f, 0.1f, 1.0f};
 
             m_Renderer->Clear(clearColor);
             m_Renderer->RenderScene(*m_Scene);
-
+            m_Renderer->Present();
         }
         SDL_Quit();
         return 0;

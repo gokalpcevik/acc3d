@@ -44,5 +44,4 @@ namespace acc3d::ECS
         friend class Scene;
         friend class Graphics::Renderer;
     };
-
 } //

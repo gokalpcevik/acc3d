@@ -11,7 +11,7 @@ namespace acc3d::Graphics
 	public:
 		PipelineState(ID3D12Device2* pDevice, D3D12_PIPELINE_STATE_STREAM_DESC const* pDesc);
 
-
+		Microsoft::WRL::ComPtr<ID3D12PipelineState> const& GetD3D12PipelineState() const;
 	private:
 		Microsoft::WRL::ComPtr<ID3D12PipelineState> m_PipelineState;
 

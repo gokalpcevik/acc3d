@@ -143,4 +143,27 @@ namespace acc3d::Graphics
 			m_LayoutElements.push_back(layoutElement);
 		}
 	}
+
+	std::vector<D3D12_INPUT_ELEMENT_DESC> VertexLayout::GetD3D12InputLayout() const
+	{
+		std::vector<D3D12_INPUT_ELEMENT_DESC> inputLayout;
+		UINT inputSlot = 0;
+		for(auto& element : m_LayoutElements)
+		{
+			D3D12_INPUT_ELEMENT_DESC desc;
+			desc.Format = ShaderDataFormatHelper::ShaderDataFormatToDXGIFormat(element.Format);
+			desc.AlignedByteOffset = element.AlignedByteOffset;
+			desc.SemanticName = element.SemanticName.c_str();
+			desc.SemanticIndex = element.SemanticIndex;
+			desc.InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
+			desc.InputSlot = inputSlot;
+			desc.InstanceDataStepRate = 0UL;
+			inputLayout.push_back(desc);
+
+			inputSlot += ShaderDataFormatHelper::GetShaderDataFormatSizeInBytes(element.Format);
+		}
+
+		return std::move(inputLayout);
+
+	}
 }

@@ -10,14 +10,22 @@ namespace acc3d::ECS
     {
         TransformComponent() = default;
 
-        TransformComponent(DirectX::XMFLOAT3 translation, DirectX::XMFLOAT3 rotation, DirectX::XMFLOAT3 scale)
-                : Translation(std::move(translation)), Rotation(std::move(rotation)),
-                  Scale(std::move(scale))
-        {}
+        TransformComponent(DirectX::XMFLOAT3 translation, DirectX::XMFLOAT4 rotation, DirectX::XMFLOAT3 scale)
+            : Translation(std::move(translation)), Rotation(DirectX::XMLoadFloat4(&rotation)),
+            Scale(std::move(scale))
+        {
+        }
 
-        DirectX::XMFLOAT3 Translation{};
-        DirectX::XMFLOAT3 Rotation{ 0.0f, 0.0f, 0.0f };
-        DirectX::XMFLOAT3 Scale{};
+        [[nodiscard]] DirectX::XMMATRIX GetTransformationMatrix() const noexcept
+        {
+            return DirectX::XMMatrixScaling(Scale.x, Scale.y, Scale.z) *
+                DirectX::XMMatrixRotationQuaternion(Rotation) *
+                DirectX::XMMatrixTranslation(Translation.x, Translation.y, Translation.z);
+        }
+
+        DirectX::XMFLOAT3 Translation{0.0f, 0.0f, 0.0f};
+        DirectX::XMVECTOR Rotation{ 1.0f,0.0f,0.0f,0.0f };
+        DirectX::XMFLOAT3 Scale{1.0f,1.0f,1.0f};
     };
 
     struct TagComponent

@@ -14,6 +14,7 @@ namespace acc3d::Graphics
 
 	ShaderCompilationEntry ShaderCompiler::CompileShader(const ShaderCompilationParameters& param)
 	{
+		acc3d_trace("Attempting to compile shader:{0}", Util::WCharArrayToStdString(param.ShaderPath,std::wcslen(param.ShaderPath) + 1));
 		assert(std::filesystem::exists(param.ShaderPath) && "Shader file doesn't exist!");
 		ShaderCompilationEntry entry;
 
@@ -33,6 +34,8 @@ namespace acc3d::Graphics
 			acc3d_error(static_cast<char const*>(entry.ErrorBlob->GetBufferPointer()));
 			return { nullptr,nullptr };
 		}
+
+		acc3d_info("Compile successful!");
 
 		entry.ShaderType = param.ShaderType;
 		entry.CompilationSucceeded = true;

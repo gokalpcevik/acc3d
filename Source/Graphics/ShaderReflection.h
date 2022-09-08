@@ -52,6 +52,12 @@ namespace acc3d::Graphics
 	{
 	public:
 		explicit VertexLayout(ShaderId id);
+
+		[[nodiscard]] uint64_t GetNumInputParameters() const { return m_NumInputParameters;  }
+		[[nodiscard]] uint64_t GetStride() const { return m_Stride; }
+		[[nodiscard]] std::vector<VertexLayoutElement> const& GetElements() const { return m_LayoutElements; }
+
+		std::vector<D3D12_INPUT_ELEMENT_DESC> GetD3D12InputLayout() const;
 	private:
 		std::vector<VertexLayoutElement> m_LayoutElements;
 		uint64_t m_NumInputParameters = 0;

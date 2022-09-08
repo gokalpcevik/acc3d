@@ -17,5 +17,6 @@ target_sources(acc3d PRIVATE
     Synchronizer.cpp
     PipelineState.cpp
     ShaderReflection.cpp
+    Drawable.cpp
     RendererConfiguration.h
     Type.h)

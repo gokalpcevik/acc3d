@@ -5,27 +5,12 @@ namespace acc3d::Graphics
 	using Microsoft::WRL::ComPtr;
 	using namespace DirectX;
 
-	void Renderer::Clear(const FLOAT* clearColor)
+	void Renderer::Clear(const FLOAT* clearColor) const
 	{
-		// Update the model matrix.
 
-		static float time = 0.0f;
-		time += 1.f;
-		float angle = time;
-		const XMVECTOR rotationAxis = XMVectorSet(1, 1, 1, 0);
-		m_CubeInfo.ModelMatrix = XMMatrixRotationAxis(rotationAxis, XMConvertToRadians(angle));
-
-		// Update the view matrix.
-		const XMVECTOR eyePosition = XMVectorSet(0, 0, -10, 1);
-		const XMVECTOR focusPoint = XMVectorSet(0, 0, 0, 1);
-		const XMVECTOR upDirection = XMVectorSet(0, 1, 0, 0);
-		m_CubeInfo.ViewMatrix = XMMatrixLookAtLH(eyePosition, focusPoint, upDirection);
-
-		// Update the projection matrix.
-		float aspectRatio = (float)m_Window->GetSurfaceWidth() / m_Window->GetSurfaceHeight();
-		m_CubeInfo.ProjectionMatrix = XMMatrixPerspectiveFovLH(XMConvertToRadians(m_CubeInfo.FOV), aspectRatio, 0.1f, 100.0f);
-
-
+/*
+ * ------------------------RESOURCE BARRIER / MEMBER VAR ALIASES----------------------------------
+ */
 /*
  * Get references/pointers to the variable that will be used throughout the function.
  */
@@ -36,15 +21,15 @@ namespace acc3d::Graphics
 		commandAllocator->Reset();
 		m_GfxCmdList->Reset(commandAllocator->GetD3D12CommandAllocatorPtr(), nullptr);
 
-
-
 /*
  * Switch the resource state to render target state.
  */
 		backBuffer->TransitionAndBarrier(cmdList, D3D12_RESOURCE_STATE_PRESENT,
 		                                 D3D12_RESOURCE_STATE_RENDER_TARGET);
 
-
+/*
+ * -----------------------------------------------------------------------------------------------
+ */
 /*
  * -----------------------------------CLEAR-------------------------------------------------------
  */
@@ -65,32 +50,13 @@ namespace acc3d::Graphics
 
 
 		this->ClearDepthStencilView(dsv);
-/*
-* -----------------------------------------------------------------------------------------------
-*/
-		cmdList->SetPipelineState(m_CubeInfo.PipelineState.Get());
-		cmdList->SetGraphicsRootSignature(m_CubeInfo.RootSignature->GetD3D12RootSignaturePtr());
-		cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	}
 
-		cmdList->IASetVertexBuffers(0, 1, &m_CubeInfo.VertexBufferView);
-		cmdList->IASetIndexBuffer(&m_CubeInfo.IndexBufferView);
+	void Renderer::Present()
+	{
+		auto cmdList = m_GfxCmdList->GetD3D12GraphicsCommandListPtr();
+		auto& backBuffer = m_BackBuffers[m_CurrentBackBufferIndex];
 
-		cmdList->RSSetViewports(1, &m_Viewport);
-		cmdList->RSSetScissorRects(1, &m_ScissorRect);
-
-		D3D12_CPU_DESCRIPTOR_HANDLE const depthStencilDescriptor = m_DSVDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
-		cmdList->OMSetRenderTargets(1, &rtv, FALSE, &depthStencilDescriptor);
-
-		// Update the MVP matrix
-		XMMATRIX mvpMatrix = XMMatrixMultiply(m_CubeInfo.ModelMatrix, m_CubeInfo.ViewMatrix);
-		mvpMatrix = XMMatrixMultiply(mvpMatrix, m_CubeInfo.ProjectionMatrix);
-		cmdList->SetGraphicsRoot32BitConstants(0, sizeof(XMMATRIX) / 4, &mvpMatrix, 0);
-
-		cmdList->DrawIndexedInstanced(m_CubeInfo.indicesCount, 1, 0, 0, 0);
-
-/*
- * Switch the backbuffer state to present as we will be sending a present command to the swapchain.
- */
 		backBuffer->TransitionAndBarrier(cmdList, D3D12_RESOURCE_STATE_RENDER_TARGET,
 			D3D12_RESOURCE_STATE_PRESENT);
 
@@ -102,21 +68,21 @@ namespace acc3d::Graphics
 
 		UINT syncInterval = m_PresentMethod.EnableVSync ? 1 : 0;
 		UINT presentFlags = m_Device->IsTearingSupported() && !m_PresentMethod.EnableVSync
-			                    ? DXGI_PRESENT_ALLOW_TEARING
-			                    : 0;
+			? DXGI_PRESENT_ALLOW_TEARING
+			: 0;
 		m_SwapChain->Present(syncInterval, presentFlags);
 
-/*
- * Wait if the next frame is not ready to begin yet.
- */
+		/*
+		 * Wait if the next frame is not ready to begin yet.
+		 */
 		m_FrameFenceValues[m_CurrentBackBufferIndex] = Synchronizer::IncrementAndSignal(
 			m_DirectCmdQueue->GetD3D12CommandQueuePtr(), m_Fence->GetD3D12FencePtr(), m_FenceValue);
 
 		m_CurrentBackBufferIndex = m_SwapChain->GetCurrentBackBufferIndex();
 
 		Synchronizer::WaitForFenceValue(m_Fence->GetD3D12FencePtr(),
-		                                m_FrameFenceValues[m_CurrentBackBufferIndex],
-		                                m_FenceEvent);
+			m_FrameFenceValues[m_CurrentBackBufferIndex],
+			m_FenceEvent);
 
 #if defined(_DEBUG) || defined(DEBUG)
 		m_InfoQueue->FlushQueue();
@@ -141,13 +107,13 @@ namespace acc3d::Graphics
 	
 	}
 
-	void Renderer::ClearRenderTargetView(D3D12_CPU_DESCRIPTOR_HANDLE rtv, FLOAT const* clearColor)
+	void Renderer::ClearRenderTargetView(D3D12_CPU_DESCRIPTOR_HANDLE rtv, FLOAT const* clearColor) const
 	{
 		m_GfxCmdList->GetD3D12GraphicsCommandListPtr()->ClearRenderTargetView(rtv, clearColor, 1UL,
 			&m_ScissorRect);
 	}
 
-	void Renderer::ClearDepthStencilView(D3D12_CPU_DESCRIPTOR_HANDLE dsv, D3D12_CLEAR_FLAGS flags, FLOAT depth)
+	void Renderer::ClearDepthStencilView(D3D12_CPU_DESCRIPTOR_HANDLE dsv, D3D12_CLEAR_FLAGS flags, FLOAT depth) const
 	{
 		m_GfxCmdList->GetD3D12GraphicsCommandListPtr()->ClearDepthStencilView(
 			dsv, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 1UL, &m_ScissorRect);
@@ -155,12 +121,56 @@ namespace acc3d::Graphics
 
 	void Renderer::RenderScene(ECS::Scene& scene)
 	{
-		auto group = scene.GetEnTTRegistry().group_if_exists<ECS::TransformComponent,ECS::MeshRendererComponent>();
-		
-		for (auto entity : group)
+		auto const cameraView = scene.GetEnTTRegistryMutable().view<ECS::CameraComponent>();
+		ECS::CameraComponent const* cameraComponent = nullptr;
+
+		if(cameraView.size() == 0)
 		{
-			auto [tc, mrc] = group.get(entity);
-			auto* drawable = m_DrawableMap[ECS::RIDAccessor()(mrc)];
+			acc3d_error("There is no camera to render the scene into.");
+			return;
+		}
+
+		for (auto const entity : cameraView)
+		{
+			auto const& cc = cameraView.get<ECS::CameraComponent>(entity);
+			if (cc.IsPrimaryCamera)
+			{
+				cameraComponent = &cc;
+				break;
+			}
+		}
+
+		const auto renderGroup = scene.GetEnTTRegistryMutable().group<ECS::MeshRendererComponent, ECS::TransformComponent>();
+		for (const auto entity : renderGroup)
+		{
+			// tc:TransformComponent, mrc:MeshRendererComponent
+			auto [mrc,tc] = renderGroup.get(entity);
+			Drawable* drawable = m_DrawableMap[ECS::RIDAccessor()(mrc)];
+
+			ComPtr<ID3D12GraphicsCommandList2> const& gfxCmdList = m_GfxCmdList->GetD3D12GraphicsCommandList();
+
+			gfxCmdList->SetPipelineState(drawable->PipelineState->GetD3D12PipelineState().Get());
+			gfxCmdList->IASetVertexBuffers(0UL, 1UL, &drawable->VertexBufferView);
+			gfxCmdList->IASetIndexBuffer(&drawable->IndexBufferView);
+			gfxCmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+			gfxCmdList->RSSetViewports(1, &m_Viewport);
+			gfxCmdList->RSSetScissorRects(1, &m_ScissorRect);
+			CD3DX12_CPU_DESCRIPTOR_HANDLE rtv(
+				m_RTVDescriptorHeap->GetD3D12DescriptorHeapPtr()->GetCPUDescriptorHandleForHeapStart(),
+				(m_CurrentBackBufferIndex),
+				m_DescriptorHeapSizeInfo.RTVDescriptorSize);
+			D3D12_CPU_DESCRIPTOR_HANDLE const depthStencilDescriptor = m_DSVDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+			gfxCmdList->OMSetRenderTargets(1, &rtv, FALSE, &depthStencilDescriptor);
+
+			gfxCmdList->SetGraphicsRootSignature(drawable->RootSignature->GetD3D12RootSignaturePtr());
+			
+			
+			float aspectRatio = m_Viewport.Width / m_Viewport.Height;
+			
+			XMMATRIX mvpMatrix = XMMatrixMultiply(tc.GetTransformationMatrix(), cameraComponent->ViewMatrix);
+			mvpMatrix = XMMatrixMultiply(mvpMatrix, cameraComponent->GetProjectionMatrix(aspectRatio));
+			gfxCmdList->SetGraphicsRoot32BitConstants(0, sizeof(XMMATRIX) / 4, &mvpMatrix, 0);
+			gfxCmdList->DrawIndexedInstanced(drawable->IndicesCount, 1, 0, 0, 0);
 		}
 	}
 
@@ -195,11 +205,6 @@ namespace acc3d::Graphics
 		m_Viewport.TopLeftY = 0.0f;
 		this->UpdateRenderTargetViews();
 		this->ResizeDepthBuffer(m_Window->GetSurfaceWidth(), m_Window->GetSurfaceHeight());
-
-		for (size_t i = 0; i < g_NUM_FRAMES_IN_FLIGHT; ++i)
-		{
-			m_BackBuffers[i]->GetResource()->SetName(fmt::format(L"Backbuffer:{0}",i).c_str());
-		}
 	}
 
 	void Renderer::ResizeDepthBuffer(uint32_t width, uint32_t height)
@@ -232,118 +237,12 @@ namespace acc3d::Graphics
 	}
 
 	
-
-	void Renderer::LoadTestScene()
-	{
-		auto pDevice = m_Device->GetD3D12Device2();
-
-		m_CubeInfo.FOV = 45.0f;
-
-		std::unique_ptr<CommandList> m_LoadCmdList;
-		std::unique_ptr<CommandAllocator> m_LoadCmdAllocator;
-
-		m_LoadCmdAllocator = std::make_unique<CommandAllocator>(pDevice.Get(), D3D12_COMMAND_LIST_TYPE_COPY);
-		m_LoadCmdList = std::make_unique<CommandList>(pDevice.Get(), m_LoadCmdAllocator->GetD3D12CommandAllocatorPtr(),
-			D3D12_COMMAND_LIST_TYPE_COPY, nullptr);
-		m_LoadCmdList->Reset(m_LoadCmdAllocator->GetD3D12CommandAllocatorPtr(), nullptr);
-
-
-		auto[id,meshData] = Asset::MeshLibrary::Load("Assets/donut.obj");
-		m_CubeInfo.indicesCount = meshData.Indices.size();
-
-		ComPtr<ID3D12Resource> intermediateVertexBuffer;
-		Resource::UpdateBufferResource(m_Device->GetD3D12DevicePtr(), m_LoadCmdList->GetD3D12GraphicsCommandListPtr(),
-		                               &m_CubeInfo.VertexBuffer, &intermediateVertexBuffer,
-		                               meshData.Vertices.size(), sizeof(Vertex), meshData.Vertices.data());
-
-		m_CubeInfo.VertexBufferView.BufferLocation = m_CubeInfo.VertexBuffer->GetGPUVirtualAddress();
-		m_CubeInfo.VertexBufferView.SizeInBytes = meshData.Vertices.size() * sizeof(Vertex);
-		m_CubeInfo.VertexBufferView.StrideInBytes = sizeof(Vertex);
-
-		ComPtr<ID3D12Resource> intermediateIndexBuffer;
-
-		Resource::UpdateBufferResource(m_Device->GetD3D12DevicePtr(), m_LoadCmdList->GetD3D12GraphicsCommandListPtr(),
-		                               &m_CubeInfo.IndexBuffer, &intermediateIndexBuffer,
-		                               meshData.Indices.size(), sizeof(uint32_t), meshData.Indices.data());
-
-		m_CubeInfo.IndexBufferView.BufferLocation = m_CubeInfo.IndexBuffer->GetGPUVirtualAddress();
-		m_CubeInfo.IndexBufferView.SizeInBytes = meshData.Indices.size() * sizeof(uint32_t);
-		m_CubeInfo.IndexBufferView.Format = DXGI_FORMAT_R32_UINT;
-
-		ShaderCompilationParameters const vertexShaderCompilationParams =
-			ShaderCompilationParameters::Param_CompileVS_StdIncNoFlagsMainEntry(L"Shaders\\vertex.vsh");
-
-		ShaderCompilationParameters const pixelShaderCompilationParams =
-			ShaderCompilationParameters::Param_CompilePS_StdIncNoFlagsMainEntry(L"Shaders\\pixel.psh");
-
-		auto&& [VertexShaderId, VertexShaderEntry] = ShaderLibrary::CompileAndLoad(vertexShaderCompilationParams);
-		auto&& [PixelShaderId,PixelShaderEntry] =  ShaderLibrary::CompileAndLoad(pixelShaderCompilationParams);
-
-		D3D12_ROOT_SIGNATURE_FLAGS rootSignatureFlags =
-			D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT |
-			D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS |
-			D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
-			D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS |
-			D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS;
-
-		CD3DX12_ROOT_PARAMETER1 rootParameters[1];
-		rootParameters[0].InitAsConstants(sizeof(XMMATRIX) / 4, 0, 0, D3D12_SHADER_VISIBILITY_VERTEX);
-		CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDescription;
-
-		
-		rootSignatureDescription.Init_1_1(_countof(rootParameters), rootParameters, 0, nullptr, rootSignatureFlags);
-
-		auto [rootSignatureBlob,rootSignatureErrorBlob] =
-			RootSignature::SerializeVersionedRootSignatureWithHighestVersion(pDevice.Get(), rootSignatureDescription);
-
-		m_CubeInfo.RootSignature = std::make_unique<RootSignature>(pDevice.Get(), rootSignatureBlob->GetBufferPointer(), rootSignatureBlob->GetBufferSize());
-
-		D3D12_INPUT_ELEMENT_DESC inputLayout[] = {
-			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-			{ "COLOR", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		};
-
-		struct PipelineStateStream
-		{
-			CD3DX12_PIPELINE_STATE_STREAM_ROOT_SIGNATURE pRootSignature;
-			CD3DX12_PIPELINE_STATE_STREAM_INPUT_LAYOUT InputLayout;
-			CD3DX12_PIPELINE_STATE_STREAM_PRIMITIVE_TOPOLOGY PrimitiveTopologyType;
-			CD3DX12_PIPELINE_STATE_STREAM_VS VS;
-			CD3DX12_PIPELINE_STATE_STREAM_PS PS;
-			CD3DX12_PIPELINE_STATE_STREAM_RENDER_TARGET_FORMATS RTVFormats;
-			CD3DX12_PIPELINE_STATE_STREAM_DEPTH_STENCIL_FORMAT DSVFormat;
-		} pipelineStateStream;
-
-		D3D12_RT_FORMAT_ARRAY rtvFormats = {};
-		rtvFormats.NumRenderTargets = 1;
-		rtvFormats.RTFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
-
-		pipelineStateStream.pRootSignature = m_CubeInfo.RootSignature->GetD3D12RootSignaturePtr();
-		pipelineStateStream.InputLayout = { inputLayout, _countof(inputLayout) };
-		pipelineStateStream.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-		pipelineStateStream.VS = CD3DX12_SHADER_BYTECODE(VertexShaderEntry.Blob.Get());
-		pipelineStateStream.PS = CD3DX12_SHADER_BYTECODE(PixelShaderEntry.Blob.Get());
-		pipelineStateStream.RTVFormats = rtvFormats;
-		pipelineStateStream.DSVFormat = DXGI_FORMAT_D32_FLOAT;
-
-		D3D12_PIPELINE_STATE_STREAM_DESC pipelineStateStreamDesc = {
-		sizeof(PipelineStateStream), &pipelineStateStream
-		};
-		THROW_IFF(pDevice->CreatePipelineState(&pipelineStateStreamDesc, IID_PPV_ARGS(&m_CubeInfo.PipelineState)));
-
-		m_LoadCmdList->GetD3D12GraphicsCommandListPtr()->Close();
-		ID3D12CommandList* const commandLists[] = { m_LoadCmdList->GetD3D12GraphicsCommandListPtr() };
-		m_CopyCmdQueue->GetD3D12CommandQueuePtr()->ExecuteCommandLists(1UL, commandLists);
-		Synchronizer::IncrementAndSignal(m_CopyCmdQueue->GetD3D12CommandQueuePtr(), m_Fence->GetD3D12FencePtr(), m_FenceValue);
-		Synchronizer::WaitForFenceValue(m_Fence->GetD3D12FencePtr(), m_FenceValue, m_FenceEvent);
-	}
-
 	RendererId Renderer::GenerateRendererId()
 	{
 		return m_RendererIdValue++;
 	}
 
-	void Renderer::RegisterMeshRendererComponentDrawable(RendererId id,Asset::MeshAssetId meshAssetId)
+	void Renderer::RegisterMeshRendererComponentDrawable(RendererId rendererId, Asset::MeshAssetId meshAssetId)
 	{
 		ComPtr<ID3D12Device2> const& device = m_Device->GetD3D12Device2();
 
@@ -359,12 +258,17 @@ namespace acc3d::Graphics
 		const auto& cmdList = m_LoadCmdList->GetD3D12GraphicsCommandList();
 
 		Drawable* drawable = new Drawable();
+
+		drawable->RendererId = rendererId;
+		drawable->AssetId = meshAssetId;
+
 		auto& [Vertices, Indices] = Asset::MeshLibrary::Retrieve(meshAssetId);
 
 		assert(Vertices.size() > 0 && Indices.size() > 0);
 
 		drawable->VertexBuffer = std::make_unique<Resource>(device.Get());
 		drawable->IndexBuffer = std::make_unique<Resource>(device.Get());
+		drawable->IndicesCount = Indices.size();
 
 		const std::unique_ptr vertexBufferIntermediateResource = std::make_unique<Resource>(device.Get());
 		Resource::UpdateBufferResource(device.Get(), cmdList.Get(), *drawable->VertexBuffer, *vertexBufferIntermediateResource,
@@ -382,6 +286,70 @@ namespace acc3d::Graphics
 		drawable->IndexBufferView.SizeInBytes = Indices.size() * sizeof(uint32_t);
 		drawable->IndexBufferView.Format = DXGI_FORMAT_R32_UINT;
 
+		ShaderCompilationParameters const vertexShaderCompilationParams =
+			ShaderCompilationParameters::Param_CompileVS_StdIncNoFlagsMainEntry(L"Shaders\\vertex.vsh");
+
+		ShaderCompilationParameters const pixelShaderCompilationParams =
+			ShaderCompilationParameters::Param_CompilePS_StdIncNoFlagsMainEntry(L"Shaders\\pixel.psh");
+
+		auto [VertexShaderId, VertexShaderEntry] = ShaderLibrary::CompileAndLoad(vertexShaderCompilationParams);
+		auto [PixelShaderId, PixelShaderEntry] = ShaderLibrary::CompileAndLoad(pixelShaderCompilationParams);
+
+
+		D3D12_ROOT_SIGNATURE_FLAGS rootSignatureFlags =
+			D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT |
+			D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS |
+			D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
+			D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS |
+			D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS;
+
+		CD3DX12_ROOT_PARAMETER1 rootParameters[1];
+
+		// Model view projection matrix
+		rootParameters[0].InitAsConstants(sizeof(XMMATRIX) / 4, 0, 0, D3D12_SHADER_VISIBILITY_VERTEX);
+
+		CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDescription;
+
+		rootSignatureDescription.Init_1_1(_countof(rootParameters), rootParameters, 0, nullptr, rootSignatureFlags);
+
+		auto [rootSignatureBlob, rootSignatureErrorBlob] =
+			RootSignature::SerializeVersionedRootSignatureWithHighestVersion(device.Get(), rootSignatureDescription);
+
+		drawable->RootSignature = std::make_unique<RootSignature>(device.Get(), rootSignatureBlob->GetBufferPointer(),
+		                                                          rootSignatureBlob->GetBufferSize());
+
+		VertexLayout layout(VertexShaderId);
+
+		struct PipelineStateStream
+		{
+			CD3DX12_PIPELINE_STATE_STREAM_ROOT_SIGNATURE pRootSignature;
+			CD3DX12_PIPELINE_STATE_STREAM_INPUT_LAYOUT InputLayout;
+			CD3DX12_PIPELINE_STATE_STREAM_PRIMITIVE_TOPOLOGY PrimitiveTopologyType;
+			CD3DX12_PIPELINE_STATE_STREAM_VS VS;
+			CD3DX12_PIPELINE_STATE_STREAM_PS PS;
+			CD3DX12_PIPELINE_STATE_STREAM_RENDER_TARGET_FORMATS RTVFormats;
+			CD3DX12_PIPELINE_STATE_STREAM_DEPTH_STENCIL_FORMAT DSVFormat;
+		} pipelineStateStream;
+
+		D3D12_RT_FORMAT_ARRAY rtvFormats = {};
+		rtvFormats.NumRenderTargets = 1;
+		rtvFormats.RTFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+
+
+		auto inputLayout = layout.GetD3D12InputLayout();
+		pipelineStateStream.pRootSignature = drawable->RootSignature->GetD3D12RootSignaturePtr();
+		pipelineStateStream.InputLayout = { inputLayout.data(), static_cast<UINT>(inputLayout.size()) };
+		pipelineStateStream.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+		pipelineStateStream.VS = CD3DX12_SHADER_BYTECODE(VertexShaderEntry.Blob.Get());
+		pipelineStateStream.PS = CD3DX12_SHADER_BYTECODE(PixelShaderEntry.Blob.Get());
+		pipelineStateStream.RTVFormats = rtvFormats;
+		pipelineStateStream.DSVFormat = DXGI_FORMAT_D32_FLOAT;
+
+		D3D12_PIPELINE_STATE_STREAM_DESC pipelineStateStreamDesc = {
+		sizeof(PipelineStateStream), &pipelineStateStream
+		};
+
+		drawable->PipelineState = std::make_unique<PipelineState>(device.Get(), &pipelineStateStreamDesc);
 
 		m_LoadCmdList->GetD3D12GraphicsCommandListPtr()->Close();
 		ID3D12CommandList* const commandLists[] = { m_LoadCmdList->GetD3D12GraphicsCommandListPtr() };
@@ -390,10 +358,11 @@ namespace acc3d::Graphics
 			m_FenceValue, m_FenceEvent);
 
 		m_CopyCmdQueue->GetD3D12CommandQueuePtr()->ExecuteCommandLists(1UL, commandLists);
-		Synchronizer::IncrementAndSignal(m_CopyCmdQueue->GetD3D12CommandQueuePtr(), m_CopyFence->GetD3D12FencePtr(), m_CopyFenceValue);
+		Synchronizer::IncrementAndSignal(m_CopyCmdQueue->GetD3D12CommandQueuePtr(), m_CopyFence->GetD3D12FencePtr(),
+		                                 m_CopyFenceValue);
 		Synchronizer::WaitForFenceValue(m_CopyFence->GetD3D12FencePtr(), m_CopyFenceValue, m_CopyFenceEvent);
 
-		m_DrawableMap[id] = drawable;
+		m_DrawableMap[rendererId] = drawable;
 	}
 
 	void Renderer::DeregisterMeshRendererComponentDrawable(RendererId id)

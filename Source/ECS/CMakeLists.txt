@@ -3,4 +3,5 @@ target_sources(acc3d PRIVATE
         Scene.cpp
         CommonComponents.h
         MeshRendererComponent.h
+        CameraComponent.h
         )

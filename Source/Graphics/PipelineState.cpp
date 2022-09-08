@@ -6,4 +6,9 @@ namespace acc3d::Graphics
 	{
 		THROW_IFF(pDevice->CreatePipelineState(pDesc, IID_PPV_ARGS(&m_PipelineState)));
 	}
+
+	Microsoft::WRL::ComPtr<ID3D12PipelineState> const& PipelineState::GetD3D12PipelineState() const
+	{
+		return m_PipelineState;
+	}
 }

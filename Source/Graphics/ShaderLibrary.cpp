@@ -14,10 +14,10 @@ namespace acc3d::Graphics
         ShaderId id = ShaderLibrary::ShaderPathToId(params.ShaderPath);
         if(IsLoaded(id))
         {
-            return { id,GetCompilationEntry(id) };
+            return { id,s_ShaderIdMap[id] };
         }
 
-        auto&& entry = ShaderCompiler::CompileShader(params);
+        auto entry = ShaderCompiler::CompileShader(params);
         if(entry.CompilationSucceeded)
         {
             s_ShaderIdMap[id] = entry;

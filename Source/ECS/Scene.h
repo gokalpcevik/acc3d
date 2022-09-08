@@ -2,7 +2,9 @@
 
 #include <entt/entt.hpp>
 #include "CommonComponents.h"
+#include "CameraComponent.h"
 #include "MeshRendererComponent.h"
+#include "LightComponents.h"
 #include "../AssetCore/MeshLibrary.h"
 
 namespace acc3d
@@ -28,6 +30,10 @@ namespace acc3d::ECS
 
         entt::registry const& GetEnTTRegistry() const;
 
+        entt::registry& GetEnTTRegistryMutable();
+
+        size_t GetCreatedEntityCount() const;
+
     	auto CreateEntity() -> Entity;
 
         void Destroy(Entity entity);
@@ -49,6 +55,9 @@ namespace acc3d::ECS
     private:
     	void OnConstructMeshRendererComponent(entt::registry& registry, entt::entity entity) const;
     	void OnDestroyMeshRendererComponent(entt::registry& registry, entt::entity entity) const;
+
+        void OnConstructDirectionalLightComponent(entt::registry& registry, entt::entity entity);
+        void OnDestoryDirectionalLightComponent(entt::registry& registry, entt::entity entity);
 
     private:
         entt::registry m_Registry{};

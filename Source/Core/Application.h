@@ -45,5 +45,8 @@ namespace acc3d::Core
         uint32_t m_WindowH = 1080U;
         std::unique_ptr<Graphics::Renderer> m_Renderer;
         std::unique_ptr<ECS::Scene> m_Scene;
+
+        ECS::Entity m_Donut;
+        ECS::Entity m_Camera;
     };
 }

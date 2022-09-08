@@ -86,7 +86,7 @@ namespace acc3d::Graphics
 
     	pRenderer->UpdateRenderTargetViews();
         pRenderer->ResizeDepthBuffer(window.GetSurfaceWidth(),window.GetSurfaceHeight());
-        pRenderer->LoadTestScene();
+
         return std::move(pRenderer);
     }
 }

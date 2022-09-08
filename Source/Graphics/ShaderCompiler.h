@@ -4,6 +4,7 @@
 #include <filesystem>
 #include "ResultHandler.h"
 #include "../Core/Log.h"
+#include "../Util/StringUtil.h"
 
 namespace acc3d::Graphics
 {
@@ -17,19 +18,6 @@ namespace acc3d::Graphics
 	struct ShaderCompilationEntry
 	{
 		ShaderCompilationEntry() = default;
-		ShaderCompilationEntry(const ShaderCompilationEntry&) = default;
-		ShaderCompilationEntry(ShaderCompilationEntry&&) = default;
-
-		ShaderCompilationEntry operator=(const ShaderCompilationEntry& other) const
-		{
-			return { other.Blob,other.ErrorBlob,other.ShaderType };
-		}
-
-		ShaderCompilationEntry operator=(ShaderCompilationEntry&& other) const noexcept
-		{
-			return { std::move(other.Blob),std::move(other.ErrorBlob),other.ShaderType};
-		}
-
 
 		Microsoft::WRL::ComPtr<ID3DBlob> Blob{nullptr};
 		Microsoft::WRL::ComPtr<ID3DBlob> ErrorBlob{nullptr};
