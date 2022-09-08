@@ -6,9 +6,24 @@ namespace acc3d::Asset
     MeshImporter::MeshImporter(std::filesystem::path path)
             : m_Path(std::move(path))
     {
+        this->Import(path, 0);
+    }
+
+    MeshImporter::MeshImporter(std::filesystem::path path, size_t meshIndex)
+    {
+        this->Import(path, meshIndex);
+    }
+
+    bool MeshImporter::ImportSucceeded() const
+    {
+        return m_Success;
+    }
+
+    void MeshImporter::Import(std::filesystem::path path, size_t meshIndex)
+    {
         Assimp::Importer importer;
-        auto const *pScene = importer.ReadFile(m_Path.string().c_str(), aiProcess_Triangulate |
-                                                                        aiProcess_ConvertToLeftHanded);
+        auto const* pScene = importer.ReadFile(m_Path.string().c_str(), aiProcess_Triangulate |
+            aiProcess_ConvertToLeftHanded);
 
         if (!pScene)
         {
@@ -17,28 +32,22 @@ namespace acc3d::Asset
             return;
         }
 
-        auto const *pMesh = pScene->mMeshes[0];
+        auto const* pMesh = pScene->mMeshes[meshIndex];
         m_Data.Vertices.reserve(pMesh->mNumVertices);
         m_Data.Indices.reserve(pMesh->mNumFaces * 3);
 
         for (size_t i = 0; i < pMesh->mNumVertices; ++i)
         {
-            Eigen::Vector3f pos = {pMesh->mVertices[i].x, pMesh->mVertices[i].y,
-                                 pMesh->mVertices[i].z};
-            m_Data.Vertices.emplace_back(Graphics::Vertex{pos, {1.0f,0.0f,1.0f}});
+	        const Eigen::Vector3f pos = { pMesh->mVertices[i].x, pMesh->mVertices[i].y, pMesh->mVertices[i].z };
+            m_Data.Vertices.emplace_back(Graphics::Vertex{ pos, {1.0f,0.0f,1.0f} });
         }
 
         for (size_t i = 0; i < pMesh->mNumFaces; ++i)
         {
-            auto const &face = pMesh->mFaces[i];
+            auto const& face = pMesh->mFaces[i];
             m_Data.Indices.push_back(face.mIndices[0]);
             m_Data.Indices.push_back(face.mIndices[1]);
             m_Data.Indices.push_back(face.mIndices[2]);
         }
-    }
-
-    bool MeshImporter::ImportSucceeded() const
-    {
-        return m_Success;
     }
 }

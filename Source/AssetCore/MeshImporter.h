@@ -21,6 +21,7 @@ namespace acc3d::Asset
         {
         public:
             explicit MeshImporter(std::filesystem::path path);
+            MeshImporter(std::filesystem::path path,size_t meshIndex);
 
             [[nodiscard]] bool ImportSucceeded() const;
 
@@ -29,6 +30,8 @@ namespace acc3d::Asset
                 return m_Data;
             }
 
+        private:
+            void Import(std::filesystem::path path, size_t meshIndex);
         private:
             std::filesystem::path m_Path{};
             MeshAssetContent m_Data{};
