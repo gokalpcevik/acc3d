@@ -156,14 +156,12 @@ namespace acc3d::Graphics
 			desc.SemanticName = element.SemanticName.c_str();
 			desc.SemanticIndex = element.SemanticIndex;
 			desc.InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
-			desc.InputSlot = inputSlot;
+			desc.InputSlot = 0;
 			desc.InstanceDataStepRate = 0UL;
 			inputLayout.push_back(desc);
-
-			inputSlot += ShaderDataFormatHelper::GetShaderDataFormatSizeInBytes(element.Format);
 		}
 
-		return std::move(inputLayout);
+		return inputLayout;
 
 	}
 }
