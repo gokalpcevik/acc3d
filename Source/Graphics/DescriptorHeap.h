@@ -19,6 +19,7 @@ namespace acc3d::Graphics
     {
     public:
         DescriptorHeap(ID3D12Device *pDevice, const D3D12_DESCRIPTOR_HEAP_DESC &desc);
+        DescriptorHeap(Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> descriptorHeap, D3D12_DESCRIPTOR_HEAP_TYPE type);
 
         [[nodiscard]] ID3D12DescriptorHeap* GetD3D12DescriptorHeapPtr() const;
         [[nodiscard]] Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>& GetD3D12DescriptorHeap();

@@ -9,6 +9,12 @@ namespace acc3d::Graphics
         THROW_IFF(pDevice->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&m_DescriptorHeap)));
     }
 
+    DescriptorHeap::DescriptorHeap(Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> descriptorHeap,
+	    D3D12_DESCRIPTOR_HEAP_TYPE type)
+		    : m_DescriptorHeap(std::move(descriptorHeap)),m_DescriptorHeapType(type)
+	{
+    }
+
     ID3D12DescriptorHeap* DescriptorHeap::GetD3D12DescriptorHeapPtr() const
     { return m_DescriptorHeap.Get(); }
 
