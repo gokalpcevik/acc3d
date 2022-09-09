@@ -11,7 +11,7 @@ namespace acc3d::Graphics
 	public:
 		explicit Resource(ID3D12Device* pDevice);
 
-		explicit Resource(Microsoft::WRL::ComPtr<ID3D12Resource>const & resource);
+		explicit Resource(Microsoft::WRL::ComPtr<ID3D12Resource> resource);
 
 		// Constructor for committed resources
 		Resource(ID3D12Device* pDevice, D3D12_HEAP_PROPERTIES const* pHeapProperties, D3D12_HEAP_FLAGS HeapFlags, 

@@ -18,8 +18,8 @@ namespace acc3d::Graphics
 			IID_PPV_ARGS(&m_Resource)));
 	}
 
-	Resource::Resource(Microsoft::WRL::ComPtr<ID3D12Resource> const& resource)
-		: m_Resource(resource)
+	Resource::Resource(Microsoft::WRL::ComPtr<ID3D12Resource> resource)
+		: m_Resource(std::move(resource))
 	{
 	}
 
@@ -37,6 +37,7 @@ namespace acc3d::Graphics
 	{
 		return m_Resource->GetGPUVirtualAddress();
 	}
+
 
 	void Resource::UpdateBufferResource(ID3D12GraphicsCommandList2* pCmdList, size_t NumElems, size_t ElemSize,
 	                                    void const* pBufferData, D3D12_RESOURCE_FLAGS flags)
