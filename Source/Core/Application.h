@@ -48,5 +48,7 @@ namespace acc3d::Core
 
         ECS::Entity m_Donut;
         ECS::Entity m_Camera;
+        ECS::Entity m_Light;
+        ECS::Entity m_Light2;
     };
 }

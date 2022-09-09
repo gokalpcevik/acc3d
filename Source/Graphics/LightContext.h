@@ -10,13 +10,6 @@
 
 namespace acc3d::Graphics
 {
-	struct LightEntry
-	{
-		ECS::DirectionalLightComponent DirectionalLight{};
-	private:
-		float volatile r_padding0[(256 - sizeof(ECS::DirectionalLightComponent)) / sizeof(float)];
-	};
-
 	class LightContext
 	{
 	public:
@@ -29,13 +22,15 @@ namespace acc3d::Graphics
 
 		void Clear();
 
-		void SetLightEntry(LightEntry const& entry, size_t backBufferIndex,size_t lightIndex) const;
+		void SetLightEntry(ECS::DirectionalLightComponent const& entry, size_t backBufferIndex,size_t lightIndex) const;
+
+		void SetLightEntriesDefault(size_t backBufferIndex) const;
 
 		[[nodiscard]] DescriptorHeap* GetDescriptorHeap(size_t backBufferIndex) const;
 		[[nodiscard]] Resource* GetResource(size_t backBufferIndex, size_t lightIndex) const;
-	private:
+	public:
 		std::unique_ptr<DescriptorHeap> m_LightDescriptorHeaps[g_NUM_FRAMES_IN_FLIGHT];
 		std::unique_ptr<Resource> m_LightResources[g_NUM_FRAMES_IN_FLIGHT][g_MAX_NUM_OF_DIR_LIGHTS];
-		LightEntry* m_MappedLightEntry[g_NUM_FRAMES_IN_FLIGHT][g_MAX_NUM_OF_DIR_LIGHTS];
+		ECS::DirectionalLightComponent* m_MappedLightEntry[g_NUM_FRAMES_IN_FLIGHT * g_MAX_NUM_OF_DIR_LIGHTS];
 	};
 }

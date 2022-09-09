@@ -28,7 +28,7 @@ namespace acc3d::Graphics
 			{
 
 				CD3DX12_HEAP_PROPERTIES properties(D3D12_HEAP_TYPE_UPLOAD);
-				CD3DX12_RESOURCE_DESC desc = CD3DX12_RESOURCE_DESC::Buffer(sizeof(LightEntry), D3D12_RESOURCE_FLAG_NONE);
+				CD3DX12_RESOURCE_DESC desc = CD3DX12_RESOURCE_DESC::Buffer(1024ULL * 64ULL, D3D12_RESOURCE_FLAG_NONE);
 
 				ComPtr<ID3D12Resource> pResource;
 				THROW_IFF(pDevice->CreateCommittedResource(&properties, D3D12_HEAP_FLAG_NONE, &desc,
@@ -40,12 +40,12 @@ namespace acc3d::Graphics
 				D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc{};
 
 				cbvDesc.BufferLocation = rsc->GetGPUVirtualAddress();
-				cbvDesc.SizeInBytes = sizeof(LightEntry);
+				cbvDesc.SizeInBytes = sizeof(ECS::DirectionalLightComponent) + (256 - sizeof(ECS::DirectionalLightComponent));
 
 				pDevice->CreateConstantBufferView(&cbvDesc, handle);
 
 				CD3DX12_RANGE readRange(0, 0);
-				THROW_IFF(rsc->GetResource()->Map(0, &readRange, reinterpret_cast<void**>(&m_MappedLightEntry[i][j])));
+				THROW_IFF(rsc->GetResource()->Map(0, &readRange, reinterpret_cast<void**>(&m_MappedLightEntry[i * g_MAX_NUM_OF_DIR_LIGHTS + j])));
 				handle.Offset((UINT)CBVDescriptorSize);
 			}
 		}
@@ -64,9 +64,19 @@ namespace acc3d::Graphics
 		}
 	}
 
-	void LightContext::SetLightEntry(LightEntry const& entry, size_t backBufferIndex, size_t lightIndex) const
+	void LightContext::SetLightEntry(ECS::DirectionalLightComponent const& entry, size_t backBufferIndex, size_t lightIndex) const
 	{
-		std::memcpy(m_MappedLightEntry[backBufferIndex][lightIndex], &entry, sizeof(LightEntry));
+		std::memcpy(m_MappedLightEntry[backBufferIndex * g_MAX_NUM_OF_DIR_LIGHTS + lightIndex], &entry, sizeof(ECS::DirectionalLightComponent));
+	}
+
+	void LightContext::SetLightEntriesDefault(size_t backBufferIndex) const
+	{
+		ECS::DirectionalLightComponent def{};
+
+		for(size_t i = 0; i < g_MAX_NUM_OF_DIR_LIGHTS; ++i)
+		{
+			std::memcpy(m_MappedLightEntry[backBufferIndex * g_MAX_NUM_OF_DIR_LIGHTS + i], &def, sizeof(ECS::DirectionalLightComponent));
+		}
 	}
 
 	DescriptorHeap* LightContext::GetDescriptorHeap(size_t backBufferIndex) const
@@ -76,7 +86,6 @@ namespace acc3d::Graphics
 
 	Resource* LightContext::GetResource(size_t backBufferIndex, size_t lightIndex) const
 	{
-		//return m_LightResources[(backBufferIndex * g_MAX_NUM_OF_DIR_LIGHTS + lightIndex) - 1].get();
 		return m_LightResources[backBufferIndex][lightIndex].get();
 	}
 }

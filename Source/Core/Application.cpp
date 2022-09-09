@@ -38,7 +38,7 @@ namespace acc3d::Core
         m_Scene = std::make_unique<ECS::Scene>(m_Renderer.get());
 
     	this->m_Donut = m_Scene->CreateEntity();
-        auto id = Asset::MeshLibrary()("Assets/hq_monkey.obj");
+        auto id = Asset::MeshLibrary()("Assets/donut.obj");
         m_Donut.AddComponent<ECS::MeshRendererComponent>(id);
         auto& tc = m_Donut.GetComponent<ECS::TransformComponent>();
         tc.Rotation = DirectX::XMQuaternionRotationRollPitchYaw(0.0f, 90.0f, 90.0f);
@@ -51,6 +51,21 @@ namespace acc3d::Core
         const DirectX::XMVECTOR upDirection = DirectX::XMVectorSet(0, 1, 0, 0);
         // Look at the donut!
         cc.ViewMatrix = DirectX::XMMatrixLookAtLH(eyePosition, focusPoint, upDirection);
+
+        m_Light = m_Scene->CreateEntity();
+        m_Light2 = m_Scene->CreateEntity();
+
+
+        auto& dlc = m_Light.AddComponent<ECS::DirectionalLightComponent>();
+        dlc.Intensity = 1.0f;
+        dlc.Direction = { -0.485f , +0.727f , -0.485f };
+        dlc.Color = { 0.0f,0.0f,1.0f };
+
+
+        auto& dlc2 = m_Light2.AddComponent<ECS::DirectionalLightComponent>();
+        dlc2.Intensity = 1.0f;
+        dlc2.Direction = { +0.485f , +0.727f , +0.485f };
+        dlc2.Color = { 1.0f,0.0f,0.0f };
 
         return Update();
     }

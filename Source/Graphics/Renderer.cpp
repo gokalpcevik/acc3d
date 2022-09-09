@@ -146,17 +146,21 @@ namespace acc3d::Graphics
 
 		ID3D12DescriptorHeap* const heaps[] = { m_LightContext->GetDescriptorHeap(m_CurrentBackBufferIndex)->GetD3D12DescriptorHeapPtr() };
 
+		m_LightContext->SetLightEntriesDefault(m_CurrentBackBufferIndex);
+
+
+		auto const lightView = scene.GetEnTTRegistryMutable().view<ECS::DirectionalLightComponent>();
+
+		for(size_t i = 0; i < lightView.size(); ++i)
+		{
+			auto entity = lightView[i];
+			auto entry = scene.GetComponent<ECS::DirectionalLightComponent>(entity);
+			m_LightContext->SetLightEntry(entry, m_CurrentBackBufferIndex, i);
+		}
+
+
 		auto lightGPUHandle = m_LightContext->GetDescriptorHeap(m_CurrentBackBufferIndex)->
-			GetD3D12DescriptorHeapPtr()->GetGPUDescriptorHandleForHeapStart();
-
-
-		// Just for testing for now. Intended way is to iterate over the light components in the scene
-		// and set the entries according to the light components.
-		LightEntry entry;
-		entry.DirectionalLight.Intensity = 1.0f;
-		entry.DirectionalLight.Direction = { -0.485f , +0.727f , -0.485f };
-		entry.DirectionalLight.Color = { 1.0f,1.0f,0.4f };
-		m_LightContext->SetLightEntry(entry, m_CurrentBackBufferIndex, 0);
+		GetD3D12DescriptorHeapPtr()->GetGPUDescriptorHandleForHeapStart();
 
 		// We really should set up a material system soon and avoid setting the root signature for every object or per frame.
 		// There could be like 3-4 different fixed root signatures and depending on the entity to be drawed. For example
@@ -355,8 +359,6 @@ namespace acc3d::Graphics
 		drawable->RootSignature = std::make_unique<RootSignature>(device.Get(), rootSignatureBlob->GetBufferPointer(),
 		                                                          rootSignatureBlob->GetBufferSize());
 
-		VertexLayout layout(VertexShaderId);
-
 
 		struct PipelineStateStream
 		{
@@ -373,6 +375,7 @@ namespace acc3d::Graphics
 		rtvFormats.NumRenderTargets = 1;
 		rtvFormats.RTFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
 
+		VertexLayout layout(VertexShaderId);
 
 		auto inputLayout = layout.GetD3D12InputLayout();
 		pipelineStateStream.pRootSignature = drawable->RootSignature->GetD3D12RootSignaturePtr();
