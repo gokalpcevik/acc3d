@@ -126,7 +126,7 @@ namespace acc3d::Graphics
 
 		if(cameraView.size() == 0)
 		{
-			acc3d_error("There is no camera to render the scene into.");
+			acc3d_error("There is no camera to render the scene with.");
 			return;
 		}
 
@@ -141,18 +141,39 @@ namespace acc3d::Graphics
 		}
 
 		const auto renderGroup = scene.GetEnTTRegistryMutable().group<ECS::MeshRendererComponent, ECS::TransformComponent>();
+
+		ComPtr<ID3D12GraphicsCommandList2> const& gfxCmdList = m_GfxCmdList->GetD3D12GraphicsCommandList();
+
+		ID3D12DescriptorHeap* const heaps[] = { m_LightContext->GetDescriptorHeap(m_CurrentBackBufferIndex)->GetD3D12DescriptorHeapPtr() };
+
+		auto lightGPUHandle = m_LightContext->GetDescriptorHeap(m_CurrentBackBufferIndex)->
+			GetD3D12DescriptorHeapPtr()->GetGPUDescriptorHandleForHeapStart();
+
+
+		// Just for testing for now. Intended way is to iterate over the light components in the scene
+		// and set the entries according to the light components.
+		LightEntry entry;
+		entry.DirectionalLight.Intensity = 1.0f;
+		entry.DirectionalLight.Direction = { -0.485f , +0.727f , -0.485f };
+		entry.DirectionalLight.Color = { 1.0f,1.0f,0.4f };
+		m_LightContext->SetLightEntry(entry, m_CurrentBackBufferIndex, 0);
+
+		// We really should set up a material system soon and avoid setting the root signature for every object or per frame.
+		// There could be like 3-4 different fixed root signatures and depending on the entity to be drawed. For example
+		// if the entity has a MeshRendererComponent and wants to receive light information, (something like setting a variable
+		// mrc.ReceivesLight = true) it could use the a root signature that describes all the light information layout
+		// in the scene and of course some other information like primary camera position as well.
 		for (const auto entity : renderGroup)
 		{
 			// tc:TransformComponent, mrc:MeshRendererComponent
 			auto [mrc,tc] = renderGroup.get(entity);
 			Drawable* drawable = m_DrawableMap[ECS::RIDAccessor()(mrc)];
-
-			ComPtr<ID3D12GraphicsCommandList2> const& gfxCmdList = m_GfxCmdList->GetD3D12GraphicsCommandList();
+			gfxCmdList->SetGraphicsRootSignature(drawable->RootSignature->GetD3D12RootSignaturePtr());
 
 			gfxCmdList->SetPipelineState(drawable->PipelineState->GetD3D12PipelineState().Get());
 			gfxCmdList->IASetVertexBuffers(0UL, 1UL, &drawable->VertexBufferView);
 			gfxCmdList->IASetIndexBuffer(&drawable->IndexBufferView);
-			gfxCmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+			gfxCmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST) ;
 			gfxCmdList->RSSetViewports(1, &m_Viewport);
 			gfxCmdList->RSSetScissorRects(1, &m_ScissorRect);
 			CD3DX12_CPU_DESCRIPTOR_HANDLE rtv(
@@ -162,14 +183,15 @@ namespace acc3d::Graphics
 			D3D12_CPU_DESCRIPTOR_HANDLE const depthStencilDescriptor = m_DSVDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
 			gfxCmdList->OMSetRenderTargets(1, &rtv, FALSE, &depthStencilDescriptor);
 
-			gfxCmdList->SetGraphicsRootSignature(drawable->RootSignature->GetD3D12RootSignaturePtr());
-			
-			
 			float aspectRatio = m_Viewport.Width / m_Viewport.Height;
 			
 			XMMATRIX mvpMatrix = XMMatrixMultiply(tc.GetTransformationMatrix(), cameraComponent->ViewMatrix);
 			mvpMatrix = XMMatrixMultiply(mvpMatrix, cameraComponent->GetProjectionMatrix(aspectRatio));
 			gfxCmdList->SetGraphicsRoot32BitConstants(0, sizeof(XMMATRIX) / 4, &mvpMatrix, 0);
+			
+			gfxCmdList->SetDescriptorHeaps(1UL, &heaps[0]);
+			gfxCmdList->SetGraphicsRootDescriptorTable(1UL, lightGPUHandle);
+
 			gfxCmdList->DrawIndexedInstanced(drawable->IndicesCount, 1, 0, 0, 0);
 		}
 	}
@@ -239,6 +261,8 @@ namespace acc3d::Graphics
 	
 	RendererId Renderer::GenerateRendererId()
 	{
+		if (m_RendererIdValue == std::numeric_limits<uint64_t>::max())
+			m_RendererIdValue = 2;
 		return m_RendererIdValue++;
 	}
 
@@ -287,10 +311,10 @@ namespace acc3d::Graphics
 		drawable->IndexBufferView.Format = DXGI_FORMAT_R32_UINT;
 
 		ShaderCompilationParameters const vertexShaderCompilationParams =
-			ShaderCompilationParameters::Param_CompileVS_StdIncNoFlagsMainEntry(L"Shaders\\vertex.vsh");
+			ShaderCompilationParameters::Param_CompileVS_StdIncNoFlagsMainEntry(L"Shaders\\diffuse.vsh");
 
 		ShaderCompilationParameters const pixelShaderCompilationParams =
-			ShaderCompilationParameters::Param_CompilePS_StdIncNoFlagsMainEntry(L"Shaders\\pixel.psh");
+			ShaderCompilationParameters::Param_CompilePS_StdIncNoFlagsMainEntry(L"Shaders\\diffuse.psh");
 
 		auto [VertexShaderId, VertexShaderEntry] = ShaderLibrary::CompileAndLoad(vertexShaderCompilationParams);
 		auto [PixelShaderId, PixelShaderEntry] = ShaderLibrary::CompileAndLoad(pixelShaderCompilationParams);
@@ -300,13 +324,26 @@ namespace acc3d::Graphics
 			D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT |
 			D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS |
 			D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
-			D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS |
-			D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS;
+			D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS;
 
-		CD3DX12_ROOT_PARAMETER1 rootParameters[1];
+		CD3DX12_ROOT_PARAMETER1 rootParameters[2];
 
+		
 		// Model view projection matrix
 		rootParameters[0].InitAsConstants(sizeof(XMMATRIX) / 4, 0, 0, D3D12_SHADER_VISIBILITY_VERTEX);
+
+
+		D3D12_DESCRIPTOR_RANGE1 range1{ };
+		range1.NumDescriptors = g_MAX_NUM_OF_DIR_LIGHTS;
+		range1.BaseShaderRegister = 2;
+		range1.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
+		range1.Flags = D3D12_DESCRIPTOR_RANGE_FLAG_NONE;
+		range1.RegisterSpace = 0;
+		range1.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+
+		const D3D12_DESCRIPTOR_RANGE1 range[] = { range1 };
+		rootParameters[1].InitAsDescriptorTable(1, &range[0], D3D12_SHADER_VISIBILITY_PIXEL);
+
 
 		CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDescription;
 
@@ -314,11 +351,12 @@ namespace acc3d::Graphics
 
 		auto [rootSignatureBlob, rootSignatureErrorBlob] =
 			RootSignature::SerializeVersionedRootSignatureWithHighestVersion(device.Get(), rootSignatureDescription);
-
+		
 		drawable->RootSignature = std::make_unique<RootSignature>(device.Get(), rootSignatureBlob->GetBufferPointer(),
 		                                                          rootSignatureBlob->GetBufferSize());
 
 		VertexLayout layout(VertexShaderId);
+
 
 		struct PipelineStateStream
 		{
@@ -361,7 +399,6 @@ namespace acc3d::Graphics
 		Synchronizer::IncrementAndSignal(m_CopyCmdQueue->GetD3D12CommandQueuePtr(), m_CopyFence->GetD3D12FencePtr(),
 		                                 m_CopyFenceValue);
 		Synchronizer::WaitForFenceValue(m_CopyFence->GetD3D12FencePtr(), m_CopyFenceValue, m_CopyFenceEvent);
-
 		m_DrawableMap[rendererId] = drawable;
 	}
 

@@ -26,6 +26,7 @@
 #include "InfoQueue.h"
 #include "Type.h"
 #include "Drawable.h"
+#include "LightContext.h"
 #include "ShaderReflection.h"
 #include "../AssetCore/MeshLibrary.h"
 #include "../Core/Window.h"
@@ -94,8 +95,6 @@ namespace acc3d::Graphics
         D3D12_RECT m_ScissorRect{CD3DX12_RECT{0,0,LONG_MAX,LONG_MAX}};
 /*-----------------------------------------------------------------*/
 
-
-
 /*------------------------------DEBUG------------------------------*/
 #if defined(_DEBUG) || defined(DEBUG)
         std::unique_ptr<InfoQueue> m_InfoQueue;
@@ -120,6 +119,9 @@ namespace acc3d::Graphics
         // This should be atomically increased as we generate a renderer id, that is when we switch to a
         // multi-threaded renderer architecture
     	RendererId m_RendererIdValue = 2;
+/*-----------------------------------------------------------------*/
+
+        std::unique_ptr<LightContext> m_LightContext;
 
         friend class RendererFactory;
     };

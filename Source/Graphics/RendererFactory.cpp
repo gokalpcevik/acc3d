@@ -47,7 +47,10 @@ namespace acc3d::Graphics
 
         auto &&[RTVDescriptorHeap, DSVDescriptorHeap] =
                 DescriptorHeap::CreateDescriptorHeapsForSwapChainBuffers(
-                        pDevice->GetD3D12DevicePtr());
+                        pDevice->GetD3D12DevicePtr()) ;
+
+        auto pLightContext = std::make_unique<LightContext>();
+        pLightContext->Populate(pDevice->GetD3D12DevicePtr());
 
         auto pRenderer = std::make_unique<Renderer>();
 
@@ -64,7 +67,8 @@ namespace acc3d::Graphics
     	pRenderer->m_Window = &window;
         pRenderer->m_FenceEvent = Fence::CreateFenceEventHandle();
         pRenderer->m_Viewport = CD3DX12_VIEWPORT(0.0f, 0.0f, window.GetSurfaceWidth(), window.GetSurfaceHeight(), 0.0f, 1.0f);
-		
+        pRenderer->m_LightContext = std::move(pLightContext);
+
 #if defined(_DEBUG) || defined(DEBUG)
         auto pInfoQueue = std::make_unique<InfoQueue>(pRenderer->GetDevice()->GetD3D12DevicePtr());
         pRenderer->m_InfoQueue = std::move(pInfoQueue);

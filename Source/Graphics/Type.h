@@ -14,12 +14,12 @@ namespace acc3d::Graphics
 	static constexpr RendererId RENDERER_ID_EMPTY_VALUE = 0;
 	static constexpr RendererId RENDERER_ID_DELETED_VALUE = 1;
 
-	static constexpr LightId LIGHT_ID_INVALID_VALUE = 0; 
-	
+	static constexpr LightId LIGHT_ID_INVALID_VALUE = 0;
+
 	struct Vertex
 	{
 		Eigen::Vector3f Position{0.0f, 0.0f, 0.0f};
-		Eigen::Vector3f Color{1.0f, 1.0f, 1.0f};
+		Eigen::Vector3f Normal{1.0f, 1.0f, 1.0f};
 	};
 
 }

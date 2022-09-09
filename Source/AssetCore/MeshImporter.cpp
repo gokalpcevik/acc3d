@@ -38,8 +38,9 @@ namespace acc3d::Asset
 
         for (size_t i = 0; i < pMesh->mNumVertices; ++i)
         {
-	        const Eigen::Vector3f pos = { pMesh->mVertices[i].x, pMesh->mVertices[i].y, pMesh->mVertices[i].z };
-            m_Data.Vertices.emplace_back(Graphics::Vertex{ pos, {1.0f,0.0f,1.0f} });
+            const Eigen::Vector3f pos = { pMesh->mVertices[i].x, pMesh->mVertices[i].y, pMesh->mVertices[i].z };
+            const Eigen::Vector3f normal = { pMesh->mNormals[i].x, pMesh->mNormals[i].y, pMesh->mNormals[i].z };
+            m_Data.Vertices.emplace_back(Graphics::Vertex{ pos, normal });
         }
 
         for (size_t i = 0; i < pMesh->mNumFaces; ++i)

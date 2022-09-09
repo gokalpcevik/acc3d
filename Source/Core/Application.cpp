@@ -38,7 +38,7 @@ namespace acc3d::Core
         m_Scene = std::make_unique<ECS::Scene>(m_Renderer.get());
 
     	this->m_Donut = m_Scene->CreateEntity();
-        auto id = Asset::MeshLibrary()("Assets/donut.obj");
+        auto id = Asset::MeshLibrary()("Assets/hq_monkey.obj");
         m_Donut.AddComponent<ECS::MeshRendererComponent>(id);
         auto& tc = m_Donut.GetComponent<ECS::TransformComponent>();
         tc.Rotation = DirectX::XMQuaternionRotationRollPitchYaw(0.0f, 90.0f, 90.0f);
@@ -46,7 +46,7 @@ namespace acc3d::Core
         this->m_Camera = m_Scene->CreateEntity();
         auto&cc = m_Camera.AddComponent<ECS::CameraComponent>(true);
 
-    	const DirectX::XMVECTOR eyePosition = DirectX::XMVectorSet(0, 0, -10, 1);
+    	const DirectX::XMVECTOR eyePosition = DirectX::XMVectorSet(0, 0, -5, 1);
         const DirectX::XMVECTOR focusPoint = DirectX::XMVectorSet(0, 0, 0, 1);
         const DirectX::XMVECTOR upDirection = DirectX::XMVectorSet(0, 1, 0, 0);
         // Look at the donut!
@@ -112,19 +112,33 @@ namespace acc3d::Core
             }
 
 
-            m_Window->SetTitle(fmt::format("FPS: {0:.2f}, Created Entities: {1}", m_Stats.GetFramesPerSecond(),
-                                           m_Scene->GetCreatedEntityCount()).c_str());
+            m_Window->SetTitle(fmt::format("FPS: {0:.2f}, Frame Time: {1:.2f}", m_Stats.GetFramesPerSecond(), m_Stats.GetFrameTime()).c_str());
             
 
 
             auto& tc = m_Donut.GetComponent<ECS::TransformComponent>();
 
-            static float time = 0.0f;
-            time += m_Stats.GetFrameTime() / 50000.0f;
+            static float Roll = 0.0f;
+            static float Pitch = 0.0f;
+            static float Yaw = 0.0f;
 
-            float rotation = std::cos(time) * 90.0f;
+            if (Input::IsKeyPressed(SDL_SCANCODE_1))
+                Roll += 0.01f;
+            if (Input::IsKeyPressed(SDL_SCANCODE_2))
+                Roll -= 0.01f;
 
-            tc.Rotation = DirectX::XMQuaternionRotationRollPitchYaw(0.0f, rotation, rotation);
+            if (Input::IsKeyPressed(SDL_SCANCODE_3))
+                Pitch += 0.01f;
+            if (Input::IsKeyPressed(SDL_SCANCODE_4))
+                Pitch -= 0.01f;
+
+            if (Input::IsKeyPressed(SDL_SCANCODE_5))
+                Yaw += 0.01f;
+            if (Input::IsKeyPressed(SDL_SCANCODE_6))
+                Yaw -= 0.01f;
+
+
+            tc.Rotation = DirectX::XMQuaternionRotationRollPitchYaw(Roll , Pitch , Yaw);
 
 
             const FLOAT clearColor[] = {0.1f, 0.1f, 0.1f, 1.0f};

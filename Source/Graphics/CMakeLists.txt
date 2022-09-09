@@ -18,5 +18,6 @@ target_sources(acc3d PRIVATE
     PipelineState.cpp
     ShaderReflection.cpp
     Drawable.cpp
+    LightContext.cpp
     RendererConfiguration.h
     Type.h)
