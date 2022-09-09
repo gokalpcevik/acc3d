@@ -14,7 +14,7 @@ namespace acc3d::Graphics
 	{
 		ECS::DirectionalLightComponent DirectionalLight{};
 	private:
-		uint8_t volatile r_padding[256 - sizeof(ECS::DirectionalLightComponent)] = {};
+		float volatile r_padding0[(256 - sizeof(ECS::DirectionalLightComponent)) / sizeof(float)];
 	};
 
 	class LightContext
