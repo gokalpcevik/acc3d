@@ -21,3 +21,5 @@ target_sources(acc3d PRIVATE
     LightContext.cpp
     RendererConfiguration.h
     Type.h)
+
+add_subdirectory(Material)

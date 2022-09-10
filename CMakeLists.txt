@@ -12,6 +12,7 @@ find_package(directxtk12 CONFIG REQUIRED)
 find_package(directxtex CONFIG REQUIRED)
 find_package(directxmath CONFIG REQUIRED)
 find_package(sparsehash CONFIG REQUIRED)
+find_package(yaml-cpp CONFIG REQUIRED)
 
 add_executable(${PROJECT_NAME} "Source/Main.cpp")
 
@@ -40,6 +41,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     Microsoft::DirectXTex
     Microsoft::DirectXMath
     sparsehash::sparsehash
+    yaml-cpp
     )
 
 find_path(D3DX12_INCLUDE_DIRS "d3dx12.h")
@@ -55,3 +57,8 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory
         ${CMAKE_SOURCE_DIR}/Shaders
         $<TARGET_FILE_DIR:${PROJECT_NAME}>/Shaders)
+
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_SOURCE_DIR}/Material/RootSigDef
+        $<TARGET_FILE_DIR:${PROJECT_NAME}>/Material/RootSigDef)
