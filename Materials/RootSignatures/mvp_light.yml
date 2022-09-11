@@ -37,11 +37,13 @@
 # descriptors_static_keeping_buffer_bounds_checks
 # descriptors_volatile
 
-# D3D12_ROOT_SIGNATURE_FLAGS will be provided by the callee of the root signature file deserializer in
-# C++.
-
-root_signature_description:
+root_signature:
     root_signature_name: "Default Root Signature"
+    root_signature_flags:
+                    - allow_input_assembler_input_layout
+                    - deny_hull_shader_root_access
+                    - deny_domain_shader_root_access
+                    - deny_geometry_shader_root_access
     root_parameters:
       - parameter_name: "lights_root_parameter"
         type: descriptor_table

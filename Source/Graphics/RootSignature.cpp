@@ -31,18 +31,16 @@ namespace acc3d::Graphics
 
 	std::pair<Microsoft::WRL::ComPtr<ID3DBlob>, Microsoft::WRL::ComPtr<ID3DBlob>> RootSignature::
 	SerializeVersionedRootSignatureWithHighestVersion(ID3D12Device* pDevice,
-		RootSignatureFileDeserializer const& fileDeserializer,D3D12_ROOT_SIGNATURE_FLAGS flags)
+		RootSignatureFileDeserializer const& fileDeserializer)
 	{
 		CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC desc{};
 		auto const& rootParameters = fileDeserializer.GetDeserializedRootParameters();
-
-		desc.Init_1_1(rootParameters.size(), rootParameters.data(), 0,nullptr,flags);
+		desc.Init_1_1(rootParameters.size(), rootParameters.data(), 0,nullptr,fileDeserializer.GetDeserializedRootSignatureFlags());
 
 		return RootSignature::SerializeVersionedRootSignatureWithHighestVersion(pDevice, desc);
-
 	}
 
-	ID3D12RootSignature* RootSignature::GetD3D12RootSignaturePtr()
+	ID3D12RootSignature* RootSignature::GetD3D12RootSignaturePtr() const
 	{
 		return m_RootSignature.Get();
 	}

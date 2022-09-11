@@ -19,37 +19,54 @@ namespace acc3d::Graphics
 			return;
 		}
 
-		if (!root["root_signature_description"])
+		YAML::Node const rootSigNode = root["root_signature"];
+
+		if (!rootSigNode)
 		{
-			acc3d_error("No 'root_signature_description' node found in the root signature file root. File: {0}",
-			            path.string());
+			acc3d_error("No 'root_signature' node has been found.");
 			return;
 		}
 
-		YAML::Node const desc = root["root_signature_description"];
 
-		if (!desc)
+		YAML::Node const rootSigFlagsNode = rootSigNode["root_signature_flags"];
+
+		if(!rootSigFlagsNode)
 		{
-			acc3d_error("No 'root_signature_description' node has been found.");
+			acc3d_error("No 'root_signature_flags' node has been found.");
+			return;
+		}
+		
+		if(!rootSigFlagsNode.IsSequence())
+		{
+			acc3d_error("'root_signature_flags' node needs to be a sequence.");
+			return;
+		}
+
+		if (auto const rootSignatureFlags = RootSignatureFileDeserializer::GetRootSignatureFlags(rootSigFlagsNode))
+		{
+			m_RootSignatureFlags = *rootSignatureFlags;
+		}
+		else
+		{
 			return;
 		}
 
 		std::string rootSigName{};
 
-		if (!desc["root_signature_name"])
+		if (!rootSigNode["root_signature_name"])
 		{
 			acc3d_warn("'root_signature_name' has not been set. Defaulting to 'Unnamed Root Signature'");
 			rootSigName = "Unnamed Root Signature";
 		}
 
-		if (!desc["root_parameters"])
+		if (!rootSigNode["root_parameters"])
 		{
 			acc3d_error("No 'root_parameters' node has been found in the root signature file. File:\n{0}",
 			            path.string());
 			return;
 		}
 
-		YAML::Node const rootParameters = desc["root_parameters"];
+		YAML::Node const rootParameters = rootSigNode["root_parameters"];
 
 		if (!rootParameters.IsSequence())
 		{
@@ -358,6 +375,37 @@ namespace acc3d::Graphics
 		return m_RootParameters;
 	}
 
+	D3D12_ROOT_SIGNATURE_FLAGS RootSignatureFileDeserializer::GetDeserializedRootSignatureFlags() const
+	{
+		return m_RootSignatureFlags;
+	}
+
+	std::optional<D3D12_ROOT_SIGNATURE_FLAGS> RootSignatureFileDeserializer::GetRootSignatureFlags(
+		YAML::Node const& node)
+	{
+		D3D12_ROOT_SIGNATURE_FLAGS rootSigFlags = D3D12_ROOT_SIGNATURE_FLAG_NONE;
+
+		for(auto flagNode : node)
+		{
+			auto str = yaml::AsIf<std::string>(flagNode);
+			if(!(flagNode.IsScalar() && str))
+			{
+				acc3d_error("Ill-formed 'root_signature_flags', check if you have defined a valid string.");
+				return std::nullopt;
+			}
+			std::optional<D3D12_ROOT_SIGNATURE_FLAGS> const currentFlag = StringToRootSignatureFlags(*str);
+			if(!currentFlag)
+			{
+				acc3d_error("Ill-formed 'root_signature_flags', check if you have defined a valid flag option.");
+				return std::nullopt;
+			}
+
+			rootSigFlags |= *currentFlag;
+		}
+
+		return rootSigFlags;
+	}
+
 	std::optional<D3D12_ROOT_PARAMETER_TYPE> RootSignatureFileDeserializer::StringToRootParameterType(
 		std::string_view str)
 	{
@@ -444,5 +492,34 @@ namespace acc3d::Graphics
 			return D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER;
 		else
 			return std::nullopt;
+	}
+
+	std::optional<D3D12_ROOT_SIGNATURE_FLAGS> RootSignatureFileDeserializer::StringToRootSignatureFlags(
+		std::string_view str)
+	{
+		if (str == "none")
+			return D3D12_ROOT_SIGNATURE_FLAG_NONE;
+		else if (str == "allow_input_assembler_input_layout")
+			return D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
+		else if (str == "deny_vertex_shader_root_access")
+			return D3D12_ROOT_SIGNATURE_FLAG_DENY_VERTEX_SHADER_ROOT_ACCESS;
+		else if (str == "deny_hull_shader_root_access")
+			return D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS;
+		else if (str == "deny_domain_shader_root_access")
+			return D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS;
+		else if (str == "deny_geometry_shader_root_access")
+			return D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS;
+		else if (str == "deny_pixel_shader_root_access")
+			return D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS;
+		else if (str == "allow_stream_output")
+			return D3D12_ROOT_SIGNATURE_FLAG_ALLOW_STREAM_OUTPUT;
+		else if (str == "local_root_signature")
+			return D3D12_ROOT_SIGNATURE_FLAG_LOCAL_ROOT_SIGNATURE;
+		else if (str == "deny_amplification_shader_root_access")
+			return D3D12_ROOT_SIGNATURE_FLAG_DENY_AMPLIFICATION_SHADER_ROOT_ACCESS;
+		else if (str == "deny_mesh_shader_root_access")
+			return D3D12_ROOT_SIGNATURE_FLAG_DENY_MESH_SHADER_ROOT_ACCESS;
+
+		return std::nullopt;
 	}
 }

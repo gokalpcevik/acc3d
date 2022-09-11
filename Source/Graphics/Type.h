@@ -6,6 +6,7 @@ namespace acc3d::Graphics
 {
 	using RendererId = uint64_t;
 	using ShaderId = size_t;
+	using RootSignatureId = uint64_t;
 
 	static constexpr RendererId RENDERER_ID_EMPTY_KEY_VALUE = 0;
 	static constexpr RendererId RENDERER_ID_DELETED_KEY_VALUE = 1;
@@ -13,11 +14,20 @@ namespace acc3d::Graphics
 	static constexpr ShaderId SHADER_ID_EMPTY_KEY_VALUE = 0;
 	static constexpr ShaderId SHADER_ID_DELETED_KEY_VALUE = 1;
 
+	static constexpr RootSignatureId ROOT_SIGNATURE_ID_EMPTY_KEY_VALUE = 0;
+	static constexpr RootSignatureId ROOT_SIGNATURE_ID_DELETED_KEY_VALUE = 1;
+
 	// Do not set any entry in this to the values equal to SHADER_ID_EMPTY_KEY_VALUE or SHADER_ID_DELETED_KEY_VALUE
 	enum SHADER_ID_ENTRY_VALUE : ShaderId
 	{
-		ACC3D_DIFFUSE_VERTEX_SHADER = 0x80D170FD837F8A19,
-		ACC3D_DIFFUSE_PIXEL_SHADER = 0xE86AB77D9A936018
+		ACC3D_DIFFUSE_VERTEX_SHADER = 0x80D170FD837F8A19ULL,
+		ACC3D_DIFFUSE_PIXEL_SHADER = 0xE86AB77D9A936018ULL
+	};
+
+
+	enum ROOT_SIG_ENTRY_VALUE : RootSignatureId
+	{
+		ACC3D_DIFFUSE_ROOT_SIG = 0x33640DDCULL
 	};
 
 

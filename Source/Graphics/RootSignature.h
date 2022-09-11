@@ -20,9 +20,9 @@ namespace acc3d::Graphics
 
 		static std::pair<Microsoft::WRL::ComPtr<ID3DBlob>, Microsoft::WRL::ComPtr<ID3DBlob>>
 			SerializeVersionedRootSignatureWithHighestVersion(ID3D12Device* pDevice,
-				RootSignatureFileDeserializer const& fileDeserializer, D3D12_ROOT_SIGNATURE_FLAGS flags);
+				RootSignatureFileDeserializer const& fileDeserializer);
 
-		[[nodiscard]] ID3D12RootSignature* GetD3D12RootSignaturePtr();
+		[[nodiscard]] ID3D12RootSignature* GetD3D12RootSignaturePtr() const;
 		[[nodiscard]] Microsoft::WRL::ComPtr<ID3D12RootSignature>& GetD3D12RootSignature();
 	private:
 
