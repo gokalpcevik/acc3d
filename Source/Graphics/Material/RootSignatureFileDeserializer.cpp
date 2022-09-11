@@ -134,7 +134,7 @@ namespace acc3d::Graphics
 			{
 			case D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE:
 				{
-					m_DescriptorRanges.push_back({});
+					m_DescriptorRanges.emplace_back();
 					d3d12RootParameter = GetD3D12DescriptorTableRootParameter(
 						param,i ,*paramNameStr, *visibilityStr, *visibility);
 					if (!d3d12RootParameter)

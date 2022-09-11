@@ -28,17 +28,4 @@ namespace acc3d::Graphics
 
 		Microsoft::WRL::ComPtr<ID3D12RootSignature> m_RootSignature;
 	};
-
-
-	template<typename RootSignaturePath>
-	class RootSignatureFactory
-	{
-	public:
-		
-
-
-	private:
-		std::unique_ptr<RootSignature> m_RootSignature;
-
-	};
 }
