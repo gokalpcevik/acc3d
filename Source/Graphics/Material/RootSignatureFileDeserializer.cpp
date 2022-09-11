@@ -3,8 +3,7 @@
 
 namespace acc3d::Graphics
 {
-	RootSignatureFileDeserializer::RootSignatureFileDeserializer(const std::filesystem::path& path, D3D12_ROOT_SIGNATURE_FLAGS flags)
-		: m_RootSignatureFlags(flags)
+	RootSignatureFileDeserializer::RootSignatureFileDeserializer(const std::filesystem::path& path)
 	{
 		acc3d_trace("Attempting to deserialize root signature file:\n		   {0}", path.string());
 
@@ -358,14 +357,9 @@ namespace acc3d::Graphics
 		return {{*shaderRegister, *registerSpace}};
 	}
 
-	std::pair<Microsoft::WRL::ComPtr<ID3DBlob>, Microsoft::WRL::ComPtr<ID3DBlob>> RootSignatureFileDeserializer::
-	SerializeVersionedRootSignatureWithHighestVersion(ID3D12Device* pDevice) const
+	std::vector<CD3DX12_ROOT_PARAMETER1> const& RootSignatureFileDeserializer::GetDeserializedRootParameters() const
 	{
-		CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC desc{};
-
-		desc.Init_1_1(m_RootParameters.size(), m_RootParameters.data(),0,nullptr,m_RootSignatureFlags);
-
-		return RootSignature::SerializeVersionedRootSignatureWithHighestVersion(pDevice, desc);
+		return m_RootParameters;
 	}
 
 	std::optional<D3D12_ROOT_PARAMETER_TYPE> RootSignatureFileDeserializer::StringToRootParameterType(

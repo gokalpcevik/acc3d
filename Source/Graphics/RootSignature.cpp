@@ -22,11 +22,24 @@ namespace acc3d::Graphics
 		ComPtr<ID3DBlob> rootSignatureBlob;
 		ComPtr<ID3DBlob> errorBlob;
 
-		THROW_IFF(D3DX12SerializeVersionedRootSignature(&rootSignatureDescription, 
-			featureData.HighestVersion, 
+		THROW_IFF(D3DX12SerializeVersionedRootSignature(&rootSignatureDescription,
+			featureData.HighestVersion,
 			&rootSignatureBlob,
 			&errorBlob));
 		return { std::move(rootSignatureBlob),std::move(errorBlob) };
+	}
+
+	std::pair<Microsoft::WRL::ComPtr<ID3DBlob>, Microsoft::WRL::ComPtr<ID3DBlob>> RootSignature::
+	SerializeVersionedRootSignatureWithHighestVersion(ID3D12Device* pDevice,
+		RootSignatureFileDeserializer const& fileDeserializer,D3D12_ROOT_SIGNATURE_FLAGS flags)
+	{
+		CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC desc{};
+		auto const& rootParameters = fileDeserializer.GetDeserializedRootParameters();
+
+		desc.Init_1_1(rootParameters.size(), rootParameters.data(), 0,nullptr,flags);
+
+		return RootSignature::SerializeVersionedRootSignatureWithHighestVersion(pDevice, desc);
+
 	}
 
 	ID3D12RootSignature* RootSignature::GetD3D12RootSignaturePtr()

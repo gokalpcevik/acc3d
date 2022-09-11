@@ -10,22 +10,19 @@
 #include <algorithm>
 #include <yaml-cpp/yaml.h>
 #include "../../Core/Log.h"
-#include "../RootSignature.h"
 
 namespace acc3d::Graphics
 {
     class RootSignatureFileDeserializer
     {
     public:
-        RootSignatureFileDeserializer(const std::filesystem::path& path, D3D12_ROOT_SIGNATURE_FLAGS flags);
+        RootSignatureFileDeserializer(const std::filesystem::path& path);
 
         bool operator*() const
         {
             return m_ParseSucceeded;
         }
-
-        std::pair<Microsoft::WRL::ComPtr<ID3DBlob>, Microsoft::WRL::ComPtr<ID3DBlob>>
-            SerializeVersionedRootSignatureWithHighestVersion(ID3D12Device* pDevice) const;
+        [[nodiscard]] std::vector<CD3DX12_ROOT_PARAMETER1> const& GetDeserializedRootParameters() const;
 
         static std::optional<D3D12_ROOT_PARAMETER_TYPE> StringToRootParameterType(std::string_view str);
         static std::optional<D3D12_SHADER_VISIBILITY> StringToShaderVisibility(std::string_view str);
@@ -46,10 +43,9 @@ namespace acc3d::Graphics
             D3D12_SHADER_VISIBILITY visibility);
 
         static std::optional<std::pair<int32_t, int32_t>> ValidateShaderRegisterAndRegisterSpace(YAML::Node const& node, std::string_view parameterName);
-        std::vector<CD3DX12_ROOT_PARAMETER1> m_RootParameters{};
 
     private:
-        D3D12_ROOT_SIGNATURE_FLAGS m_RootSignatureFlags;
+        std::vector<CD3DX12_ROOT_PARAMETER1> m_RootParameters{};
         std::vector<std::vector<CD3DX12_DESCRIPTOR_RANGE1>> m_DescriptorRanges;
     	bool m_ParseSucceeded = false;
     };
