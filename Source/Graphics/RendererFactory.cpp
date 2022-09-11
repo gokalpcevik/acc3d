@@ -85,12 +85,14 @@ namespace acc3d::Graphics
                 D3D12_COMMAND_LIST_TYPE_DIRECT,
                 nullptr);
 
-        pRenderer->m_DrawableMap.set_empty_key(RENDERER_ID_EMPTY_VALUE);
-        pRenderer->m_DrawableMap.set_deleted_key(RENDERER_ID_DELETED_VALUE);
+        pRenderer->m_DrawableMap.set_empty_key(RENDERER_ID_EMPTY_KEY_VALUE);
+        pRenderer->m_DrawableMap.set_deleted_key(RENDERER_ID_DELETED_KEY_VALUE);
 
-    	pRenderer->UpdateRenderTargetViews();
+        ShaderLibrary::Init();
+
+        pRenderer->UpdateRenderTargetViews();
         pRenderer->ResizeDepthBuffer(window.GetSurfaceWidth(),window.GetSurfaceHeight());
 
-        return std::move(pRenderer);
+    	return std::move(pRenderer);
     }
 }

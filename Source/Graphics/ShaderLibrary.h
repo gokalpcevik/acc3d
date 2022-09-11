@@ -1,4 +1,5 @@
 #pragma once
+#include <sparsehash/dense_hash_map>
 #include <filesystem>
 #include <unordered_map>
 #include <d3dcompiler.h>
@@ -12,17 +13,13 @@
 
 namespace acc3d::Graphics
 {
-
-	/*
-	 * There is chance that this value will clash with the hash value of a shader path but practically it is extremely low.
-	 */
-	static constexpr ShaderId SHADER_COMPILATION_ENTRY_INVALID_ID = 0;
-
 	class ShaderLibrary
 	{
 	public:
 		ShaderLibrary() = default;
 		ShaderLibrary(const ShaderLibrary&) = delete;
+
+		static void Init();
 
 		static std::tuple<ShaderId, ShaderCompilationEntry> CompileAndLoad(const ShaderCompilationParameters& params);
 
@@ -30,11 +27,9 @@ namespace acc3d::Graphics
 
 		static void RemoveCompilationEntry(ShaderId id);
 
-		static ShaderId ShaderPathToId(const std::filesystem::path& path);
-
 		static bool IsLoaded(ShaderId id);
 
 	private:
-		static std::unordered_map<ShaderId, ShaderCompilationEntry> s_ShaderIdMap;
+		static google::dense_hash_map<ShaderId, ShaderCompilationEntry> s_ShaderIdMap;
 	};
 } // Graphics

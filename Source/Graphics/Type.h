@@ -5,16 +5,21 @@
 namespace acc3d::Graphics
 {
 	using RendererId = uint64_t;
-	using LightId = uint64_t;
 	using ShaderId = size_t;
 
-	/*
-	* This values are guaranteed to never clash with any of the current or future components in the scene.
-	*/
-	static constexpr RendererId RENDERER_ID_EMPTY_VALUE = 0;
-	static constexpr RendererId RENDERER_ID_DELETED_VALUE = 1;
+	static constexpr RendererId RENDERER_ID_EMPTY_KEY_VALUE = 0;
+	static constexpr RendererId RENDERER_ID_DELETED_KEY_VALUE = 1;
 
-	static constexpr LightId LIGHT_ID_INVALID_VALUE = 0;
+	static constexpr ShaderId SHADER_ID_EMPTY_KEY_VALUE = 0;
+	static constexpr ShaderId SHADER_ID_DELETED_KEY_VALUE = 1;
+
+	// Do not set any entry in this to the values equal to SHADER_ID_EMPTY_KEY_VALUE or SHADER_ID_DELETED_KEY_VALUE
+	enum SHADER_ID_ENTRY_VALUE : ShaderId
+	{
+		ACC3D_DIFFUSE_VERTEX_SHADER = 0x80D170FD837F8A19,
+		ACC3D_DIFFUSE_PIXEL_SHADER = 0xE86AB77D9A936018
+	};
+
 
 	struct Vertex
 	{

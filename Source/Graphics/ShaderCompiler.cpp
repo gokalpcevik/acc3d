@@ -2,14 +2,16 @@
 
 namespace acc3d::Graphics
 {
-	ShaderCompilationParameters ShaderCompilationParameters::Param_CompileVS_StdIncNoFlagsMainEntry(LPCWSTR ShaderPath)
+	ShaderCompilationParameters ShaderCompilationParameters::Param_CompileVS_StdIncNoFlagsMainEntry(
+		LPCWSTR ShaderPath, ShaderId val)
 	{
-		return { ShaderPath,nullptr,D3D_COMPILE_STANDARD_FILE_INCLUDE,"main","vs_5_1",0,ShaderType::Vertex };
+		return { ShaderPath, val , nullptr,D3D_COMPILE_STANDARD_FILE_INCLUDE,"main","vs_5_1",0,ShaderType::Vertex };
 	}
 
-	ShaderCompilationParameters ShaderCompilationParameters::Param_CompilePS_StdIncNoFlagsMainEntry(LPCWSTR ShaderPath)
+	ShaderCompilationParameters ShaderCompilationParameters::Param_CompilePS_StdIncNoFlagsMainEntry(
+		LPCWSTR ShaderPath, ShaderId val)
 	{
-		return { ShaderPath,nullptr,D3D_COMPILE_STANDARD_FILE_INCLUDE,"main","ps_5_1",0,ShaderType::Pixel };
+		return { ShaderPath, val ,nullptr,D3D_COMPILE_STANDARD_FILE_INCLUDE,"main","ps_5_1",0,ShaderType::Pixel };
 	}
 
 	ShaderCompilationEntry ShaderCompiler::CompileShader(const ShaderCompilationParameters& param)

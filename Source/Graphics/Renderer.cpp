@@ -315,10 +315,12 @@ namespace acc3d::Graphics
 		drawable->IndexBufferView.Format = DXGI_FORMAT_R32_UINT;
 
 		ShaderCompilationParameters const vertexShaderCompilationParams =
-			ShaderCompilationParameters::Param_CompileVS_StdIncNoFlagsMainEntry(L"Shaders\\diffuse.vsh");
+			ShaderCompilationParameters::Param_CompileVS_StdIncNoFlagsMainEntry(
+				L"Shaders\\diffuse.vsh", SHADER_ID_ENTRY_VALUE::ACC3D_DIFFUSE_VERTEX_SHADER);
 
 		ShaderCompilationParameters const pixelShaderCompilationParams =
-			ShaderCompilationParameters::Param_CompilePS_StdIncNoFlagsMainEntry(L"Shaders\\diffuse.psh");
+			ShaderCompilationParameters::Param_CompilePS_StdIncNoFlagsMainEntry(
+				L"Shaders\\diffuse.psh", SHADER_ID_ENTRY_VALUE::ACC3D_DIFFUSE_PIXEL_SHADER);
 
 		auto [VertexShaderId, VertexShaderEntry] = ShaderLibrary::CompileAndLoad(vertexShaderCompilationParams);
 		auto [PixelShaderId, PixelShaderEntry] = ShaderLibrary::CompileAndLoad(pixelShaderCompilationParams);
