@@ -1,2 +1,2 @@
 target_sources(acc3d PRIVATE
-	RootSignatureParser.cpp)
+	RootSignatureFileDeserializer.cpp)

@@ -9,15 +9,23 @@
 #include <optional>
 #include <algorithm>
 #include <yaml-cpp/yaml.h>
-#include "../RootSignature.h"
 #include "../../Core/Log.h"
+#include "../RootSignature.h"
 
 namespace acc3d::Graphics
 {
-    class RootSignatureParser
+    class RootSignatureFileDeserializer
     {
     public:
-        RootSignatureParser(ID3D12Device* pDevice, const std::filesystem::path& path, D3D12_ROOT_SIGNATURE_FLAGS flags);
+        RootSignatureFileDeserializer(const std::filesystem::path& path, D3D12_ROOT_SIGNATURE_FLAGS flags);
+
+        bool operator*() const
+        {
+            return m_ParseSucceeded;
+        }
+
+        std::pair<Microsoft::WRL::ComPtr<ID3DBlob>, Microsoft::WRL::ComPtr<ID3DBlob>>
+            SerializeVersionedRootSignatureWithHighestVersion(ID3D12Device* pDevice) const;
 
         static std::optional<D3D12_ROOT_PARAMETER_TYPE> StringToRootParameterType(std::string_view str);
         static std::optional<D3D12_SHADER_VISIBILITY> StringToShaderVisibility(std::string_view str);
@@ -33,13 +41,17 @@ namespace acc3d::Graphics
             YAML::Node const& node, std::string_view parameterName, std::string_view typeStr, std::string_view visibilityStr,
             D3D12_SHADER_VISIBILITY visibility);
 
-        static std::optional<CD3DX12_ROOT_PARAMETER1> GetD3D12DescriptorTableRootParameter(
-            YAML::Node const& node, std::string_view parameterName, std::string_view visibilityStr,
+    	std::optional<CD3DX12_ROOT_PARAMETER1> GetD3D12DescriptorTableRootParameter(
+            YAML::Node const& node,size_t index ,std::string_view parameterName, std::string_view visibilityStr,
             D3D12_SHADER_VISIBILITY visibility);
 
         static std::optional<std::pair<int32_t, int32_t>> ValidateShaderRegisterAndRegisterSpace(YAML::Node const& node, std::string_view parameterName);
+        std::vector<CD3DX12_ROOT_PARAMETER1> m_RootParameters{};
+
     private:
-        Microsoft::WRL::ComPtr<ID3D12RootSignature> m_RootSignature;
+        D3D12_ROOT_SIGNATURE_FLAGS m_RootSignatureFlags;
+        std::vector<std::vector<CD3DX12_DESCRIPTOR_RANGE1>> m_DescriptorRanges;
+    	bool m_ParseSucceeded = false;
     };
 
 }

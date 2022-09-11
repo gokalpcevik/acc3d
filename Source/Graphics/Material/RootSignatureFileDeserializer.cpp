@@ -1,11 +1,10 @@
-#include "RootSignatureParser.h"
+#include "RootSignatureFileDeserializer.h"
 
 
 namespace acc3d::Graphics
 {
-	RootSignatureParser::RootSignatureParser(ID3D12Device* pDevice,
-		const std::filesystem::path& path,
-		D3D12_ROOT_SIGNATURE_FLAGS flags)
+	RootSignatureFileDeserializer::RootSignatureFileDeserializer(const std::filesystem::path& path, D3D12_ROOT_SIGNATURE_FLAGS flags)
+		: m_RootSignatureFlags(flags)
 	{
 		acc3d_trace("Attempting to deserialize root signature file:\n		   {0}", path.string());
 
@@ -24,7 +23,7 @@ namespace acc3d::Graphics
 		if (!root["root_signature_description"])
 		{
 			acc3d_error("No 'root_signature_description' node found in the root signature file root. File: {0}",
-				path.string());
+			            path.string());
 			return;
 		}
 
@@ -47,7 +46,7 @@ namespace acc3d::Graphics
 		if (!desc["root_parameters"])
 		{
 			acc3d_error("No 'root_parameters' node has been found in the root signature file. File:\n{0}",
-				path.string());
+			            path.string());
 			return;
 		}
 
@@ -60,8 +59,6 @@ namespace acc3d::Graphics
 		}
 
 		size_t i = 0;
-
-		std::vector<CD3DX12_ROOT_PARAMETER1> d3d12RootParameters;
 
 		for (auto param : rootParameters)
 		{
@@ -89,12 +86,12 @@ namespace acc3d::Graphics
 			if (!visibilityNode)
 			{
 				acc3d_error("No root parameter 'visibility' has been set for root parameter '{0}'.",
-					paramNameStr.value());
+				            paramNameStr.value());
 				return;
 			}
 
 			auto typeStr = YAML::as_if<std::string, std::optional<std::string>>(typeNode)();
-			auto paramType = RootSignatureParser::StringToRootParameterType(*typeStr);
+			auto paramType = RootSignatureFileDeserializer::StringToRootParameterType(*typeStr);
 
 
 			/* Check the 'type' string values to see if they are valid. */
@@ -106,61 +103,77 @@ namespace acc3d::Graphics
 				}
 				if (!paramType)
 				{
-					acc3d_error("Type '{1}' is not a valid type for the root parameter '{0}'", paramNameStr.value(), *typeStr);
+					acc3d_error("Type '{1}' is not a valid type for the root parameter '{0}'", paramNameStr.value(),
+					            *typeStr);
 					return;
 				}
 			}
 
 			auto visibilityStr = YAML::as_if<std::string, std::optional<std::string>>(visibilityNode)();
-			auto visibility = RootSignatureParser::StringToShaderVisibility(*visibilityStr);
+			auto visibility = RootSignatureFileDeserializer::StringToShaderVisibility(*visibilityStr);
 
 			/* Check the 'visibility' string values to see if they are valid. */
 			{
 				if (!visibilityStr)
 				{
 					acc3d_error("Current visibility setting is not a string for the parameter '{0}'",
-						paramNameStr.value());
+					            paramNameStr.value());
 					return;
 				}
 
 				if (!visibility)
 				{
 					acc3d_error("Visibility setting '{1}' is not a valid value for the parameter '{0}'.",
-						paramNameStr.value(), *visibilityStr);
+					            paramNameStr.value(), *visibilityStr);
 					return;
 				}
 			}
+			
+			std::optional<CD3DX12_ROOT_PARAMETER1> d3d12RootParameter;
 
 			switch (*paramType)
 			{
 			case D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE:
-			{
-				auto d3d12RootParameter = GetD3D12DescriptorTableRootParameter(param, *paramNameStr, *visibilityStr, *visibility);
-				break;
-			}
+				{
+					m_DescriptorRanges.push_back({});
+					d3d12RootParameter = GetD3D12DescriptorTableRootParameter(
+						param,i ,*paramNameStr, *visibilityStr, *visibility);
+					if (!d3d12RootParameter)
+						return;
+					break;
+				}
 			case D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS:
-			{
-				auto d3d12RootParameter = GetD3D1232BitConstantsRootParameter(param, *paramNameStr, *visibilityStr, *visibility);
-				if (!d3d12RootParameter)
-					return;
-				break;
-			}
-			case D3D12_ROOT_PARAMETER_TYPE_CBV: case D3D12_ROOT_PARAMETER_TYPE_SRV: case D3D12_ROOT_PARAMETER_TYPE_UAV:
-			{
-				auto d3d12RootParameter = GetD3D12CBV_SRV_UAV_RootParameter(param, *paramNameStr, *typeStr, *visibilityStr, *visibility);
-				if (!d3d12RootParameter)
-					return;
-				break;
-			}
+				{
+					d3d12RootParameter = GetD3D1232BitConstantsRootParameter(
+						param, *paramNameStr, *visibilityStr, *visibility);
+					if (!d3d12RootParameter)
+						return;
+					break;
+				}
+			case D3D12_ROOT_PARAMETER_TYPE_CBV:
+			case D3D12_ROOT_PARAMETER_TYPE_SRV:
+			case D3D12_ROOT_PARAMETER_TYPE_UAV:
+				{
+					d3d12RootParameter = GetD3D12CBV_SRV_UAV_RootParameter(
+						param, *paramNameStr, *typeStr, *visibilityStr, *visibility);
+					if (!d3d12RootParameter)
+						return;
+					break;
+				}
 
 			default: break;
 			}
 
+			m_RootParameters.push_back(*d3d12RootParameter);
+
+
 			++i;
 		}
+
+		m_ParseSucceeded = true;
 	}
 
-	std::optional<CD3DX12_ROOT_PARAMETER1> RootSignatureParser::GetD3D1232BitConstantsRootParameter(
+	std::optional<CD3DX12_ROOT_PARAMETER1> RootSignatureFileDeserializer::GetD3D1232BitConstantsRootParameter(
 		YAML::Node const& node, std::string_view parameterName, std::string_view visibilityStr,
 		D3D12_SHADER_VISIBILITY visibility)
 	{
@@ -189,7 +202,7 @@ namespace acc3d::Graphics
 		return param1;
 	}
 
-	std::optional<CD3DX12_ROOT_PARAMETER1> RootSignatureParser::GetD3D12CBV_SRV_UAV_RootParameter(
+	std::optional<CD3DX12_ROOT_PARAMETER1> RootSignatureFileDeserializer::GetD3D12CBV_SRV_UAV_RootParameter(
 		YAML::Node const& node, std::string_view parameterName, std::string_view typeStr,
 		std::string_view visibilityStr,
 		D3D12_SHADER_VISIBILITY visibility)
@@ -205,7 +218,8 @@ namespace acc3d::Graphics
 
 		if (!rootDescriptorFlagNode)
 		{
-			acc3d_error(R"(Ill-formed root parameter named '{0}'. Check if you have defined 'root_descriptor_flags'.)", parameterName);
+			acc3d_error(R"(Ill-formed root parameter named '{0}'. Check if you have defined 'root_descriptor_flags'.)",
+			            parameterName);
 			return std::nullopt;
 		}
 
@@ -235,8 +249,8 @@ namespace acc3d::Graphics
 		return param1;
 	}
 
-	std::optional<CD3DX12_ROOT_PARAMETER1> RootSignatureParser::GetD3D12DescriptorTableRootParameter(
-		YAML::Node const& node, std::string_view parameterName, std::string_view visibilityStr,
+	std::optional<CD3DX12_ROOT_PARAMETER1> RootSignatureFileDeserializer::GetD3D12DescriptorTableRootParameter(
+		YAML::Node const& node, size_t index, std::string_view parameterName, std::string_view visibilityStr,
 		D3D12_SHADER_VISIBILITY visibility)
 	{
 		YAML::Node const descriptorRangesNode = node["descriptor_ranges"];
@@ -251,13 +265,12 @@ namespace acc3d::Graphics
 
 		size_t i = 0;
 
-		std::vector<CD3DX12_DESCRIPTOR_RANGE1> d3d12DescriptorRanges;
-
 		for (auto rangeNode : descriptorRangesNode)
 		{
 			if (!rangeNode.IsMap())
 			{
-				acc3d_error("Descriptor range node at index '{0}' in the root parameter '{1}' is not a map.", i, parameterName);
+				acc3d_error("Descriptor range node at index '{0}' in the root parameter '{1}' is not a map.", i,
+				            parameterName);
 				return std::nullopt;
 			}
 			YAML::Node rangeNameNode = rangeNode["range_name"];
@@ -270,7 +283,9 @@ namespace acc3d::Graphics
 			if (!(rangeNameNode && numDescriptorsNode && baseShaderRegisterNode &&
 				registerSpaceNode && descriptorRangeTypeNode && descriptorRangeFlagsNode))
 			{
-				acc3d_error(R"(Ill-formed descriptor range at index '{0}' in the root parameter '{1}'. Check if you have defined 'range_name', 'num_descriptors', 'base_shader_register', 'register_space','descriptor_range_type','descriptor_range_flags'.)", i, parameterName);
+				acc3d_error(
+					R"(Ill-formed descriptor range at index '{0}' in the root parameter '{1}'. Check if you have defined 'range_name', 'num_descriptors', 'base_shader_register', 'register_space','descriptor_range_type','descriptor_range_flags'.)",
+					i, parameterName);
 				return std::nullopt;
 			}
 
@@ -278,13 +293,17 @@ namespace acc3d::Graphics
 			auto numDescriptors = YAML::as_if<int32_t, std::optional<int32_t>>(numDescriptorsNode)();
 			auto baseShaderRegister = YAML::as_if<int32_t, std::optional<int32_t>>(baseShaderRegisterNode)();
 			auto registerSpace = YAML::as_if<int32_t, std::optional<int32_t>>(registerSpaceNode)();
-			auto descriptorRangeTypeStr = YAML::as_if<std::string, std::optional<std::string>>(descriptorRangeTypeNode)();
-			auto descriptorRangeFlagsStr = YAML::as_if<std::string, std::optional<std::string>>(descriptorRangeFlagsNode)();
+			auto descriptorRangeTypeStr = YAML::as_if<
+				std::string, std::optional<std::string>>(descriptorRangeTypeNode)();
+			auto descriptorRangeFlagsStr = YAML::as_if<std::string, std::optional<std::string>>(
+				descriptorRangeFlagsNode)();
 
 			if (!(rangeName && numDescriptors && baseShaderRegister &&
 				registerSpace && descriptorRangeTypeStr && descriptorRangeFlagsStr))
 			{
-				acc3d_error(R"(Ill-formed descriptor range at index '{0}' in the root parameter '{1}'. Check if you have correctly defined,respecting the types, 'range_name', 'num_descriptors', 'base_shader_register', 'register_space','descriptor_range_type','descriptor_range_flags'.)", i, parameterName);
+				acc3d_error(
+					R"(Ill-formed descriptor range at index '{0}' in the root parameter '{1}'. Check if you have correctly defined,respecting the types, 'range_name', 'num_descriptors', 'base_shader_register', 'register_space','descriptor_range_type','descriptor_range_flags'.)",
+					i, parameterName);
 				return std::nullopt;
 			}
 
@@ -300,24 +319,27 @@ namespace acc3d::Graphics
 			}
 
 			CD3DX12_DESCRIPTOR_RANGE1 range{};
-			range.Init(*descriptorRangeType, (UINT)*numDescriptors, (UINT)*baseShaderRegister, (UINT)*registerSpace, *descriptorRangeFlags, D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND);
+			range.Init(*descriptorRangeType, (UINT)*numDescriptors, (UINT)*baseShaderRegister, (UINT)*registerSpace,
+			           *descriptorRangeFlags, D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND);
 
 
-			acc3d_debug("root_parameter_name={7}\nrange_name={0}\nindex={1}\nnum_descriptors={2}\nbase_shader_register={3}\nregister_space={4}\ndescriptor_range_type={5}\ndescriptor_range_flags={6}\n"
-				, *rangeName, i, *numDescriptors, *baseShaderRegister, *registerSpace, *descriptorRangeTypeStr, *descriptorRangeFlagsStr, parameterName);
+			acc3d_debug(
+				"root_parameter_name={7}\nrange_name={0}\nindex={1}\nnum_descriptors={2}\nbase_shader_register={3}\nregister_space={4}\ndescriptor_range_type={5}\ndescriptor_range_flags={6}\n"
+				, *rangeName, i, *numDescriptors, *baseShaderRegister, *registerSpace, *descriptorRangeTypeStr,
+				*descriptorRangeFlagsStr, parameterName);
 
 
-			d3d12DescriptorRanges.push_back(range);
+			m_DescriptorRanges[index].push_back(range);
 			i++;
 		}
 
 		CD3DX12_ROOT_PARAMETER1 param1{};
-		param1.InitAsDescriptorTable(descriptorRangesNode.size(), d3d12DescriptorRanges.data(), visibility);
+		param1.InitAsDescriptorTable((UINT)descriptorRangesNode.size(), m_DescriptorRanges[index].data(), visibility);
 		return param1;
 	}
 
 
-	std::optional<std::pair<int32_t, int32_t>> RootSignatureParser::ValidateShaderRegisterAndRegisterSpace(
+	std::optional<std::pair<int32_t, int32_t>> RootSignatureFileDeserializer::ValidateShaderRegisterAndRegisterSpace(
 		YAML::Node const& node, std::string_view parameterName)
 	{
 		YAML::Node const shaderRegisterNode = node["shader_register"];
@@ -333,10 +355,20 @@ namespace acc3d::Graphics
 				parameterName);
 			return std::nullopt;
 		}
-		return { {*shaderRegister, *registerSpace} };
+		return {{*shaderRegister, *registerSpace}};
 	}
 
-	std::optional<D3D12_ROOT_PARAMETER_TYPE> RootSignatureParser::StringToRootParameterType(
+	std::pair<Microsoft::WRL::ComPtr<ID3DBlob>, Microsoft::WRL::ComPtr<ID3DBlob>> RootSignatureFileDeserializer::
+	SerializeVersionedRootSignatureWithHighestVersion(ID3D12Device* pDevice) const
+	{
+		CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC desc{};
+
+		desc.Init_1_1(m_RootParameters.size(), m_RootParameters.data(),0,nullptr,m_RootSignatureFlags);
+
+		return RootSignature::SerializeVersionedRootSignatureWithHighestVersion(pDevice, desc);
+	}
+
+	std::optional<D3D12_ROOT_PARAMETER_TYPE> RootSignatureFileDeserializer::StringToRootParameterType(
 		std::string_view str)
 	{
 		if (str == "32bit_constants")
@@ -353,7 +385,7 @@ namespace acc3d::Graphics
 			return std::nullopt;
 	}
 
-	std::optional<D3D12_SHADER_VISIBILITY> RootSignatureParser::StringToShaderVisibility(std::string_view str)
+	std::optional<D3D12_SHADER_VISIBILITY> RootSignatureFileDeserializer::StringToShaderVisibility(std::string_view str)
 	{
 		if (str == "vertex")
 			return D3D12_SHADER_VISIBILITY_VERTEX;
@@ -375,7 +407,7 @@ namespace acc3d::Graphics
 			return std::nullopt;
 	}
 
-	std::optional<D3D12_ROOT_DESCRIPTOR_FLAGS> RootSignatureParser::StringToRootDescriptorFlag(
+	std::optional<D3D12_ROOT_DESCRIPTOR_FLAGS> RootSignatureFileDeserializer::StringToRootDescriptorFlag(
 		std::string_view str)
 	{
 		if (str == "none")
@@ -390,7 +422,7 @@ namespace acc3d::Graphics
 			return std::nullopt;
 	}
 
-	std::optional<D3D12_DESCRIPTOR_RANGE_FLAGS> RootSignatureParser::StringToDescriptorRangeFlag(
+	std::optional<D3D12_DESCRIPTOR_RANGE_FLAGS> RootSignatureFileDeserializer::StringToDescriptorRangeFlag(
 		std::string_view str)
 	{
 		if (str == "none")
@@ -409,7 +441,7 @@ namespace acc3d::Graphics
 			return std::nullopt;
 	}
 
-	std::optional<D3D12_DESCRIPTOR_RANGE_TYPE> RootSignatureParser::StringToDescriptorRangeType(
+	std::optional<D3D12_DESCRIPTOR_RANGE_TYPE> RootSignatureFileDeserializer::StringToDescriptorRangeType(
 		std::string_view str)
 	{
 		if (str == "descriptor_range_cbv")
