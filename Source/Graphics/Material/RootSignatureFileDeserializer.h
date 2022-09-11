@@ -8,7 +8,7 @@
 #include <cstdint>
 #include <optional>
 #include <algorithm>
-#include <yaml-cpp/yaml.h>
+#include "acc3d_yaml.h"
 #include "../../Core/Log.h"
 
 namespace acc3d::Graphics
@@ -50,42 +50,4 @@ namespace acc3d::Graphics
     	bool m_ParseSucceeded = false;
     };
 
-}
-
-
-namespace YAML
-{
-    template <typename T>
-    struct as_if<T, std::optional<T> >
-    {
-        explicit as_if(const YAML::Node& node_) : node(node_) {}
-        const YAML::Node& node;
-
-        const std::optional<T> operator()() const
-        {
-            std::optional<T> val;
-            T t;
-            if (node.m_pNode && YAML::convert<T>::decode(node, t))
-                val = std::move(t);
-
-            return val;
-        }
-    };
-
-    template <>
-    struct as_if<std::string, std::optional<std::string> >
-    {
-        explicit as_if(const ::YAML::Node& node_) : node(node_) {}
-        const ::YAML::Node& node;
-
-        const std::optional<std::string> operator()() const
-        {
-            std::optional<std::string> val;
-            std::string t;
-            if (node.m_pNode && ::YAML::convert<std::string>::decode(node, t))
-                val = std::move(t);
-
-            return val;
-        }
-    };
 }

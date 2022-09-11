@@ -68,7 +68,7 @@ namespace acc3d::Graphics
 				return;
 			}
 
-			auto paramNameStr = YAML::as_if<std::string, std::optional<std::string>>(paramNameNode)();
+			auto paramNameStr = yaml::AsIf<std::string>(paramNameNode);
 			if (!paramNameStr)
 			{
 				acc3d_error("Parameter name is not a string.");
@@ -89,9 +89,9 @@ namespace acc3d::Graphics
 				return;
 			}
 
-			auto typeStr = YAML::as_if<std::string, std::optional<std::string>>(typeNode)();
+			auto typeStr = yaml::AsIf<std::string>(typeNode);
 			auto paramType = RootSignatureFileDeserializer::StringToRootParameterType(*typeStr);
-
+			
 
 			/* Check the 'type' string values to see if they are valid. */
 			{
@@ -108,7 +108,7 @@ namespace acc3d::Graphics
 				}
 			}
 
-			auto visibilityStr = YAML::as_if<std::string, std::optional<std::string>>(visibilityNode)();
+			auto visibilityStr = yaml::AsIf<std::string>(visibilityNode);
 			auto visibility = RootSignatureFileDeserializer::StringToShaderVisibility(*visibilityStr);
 
 			/* Check the 'visibility' string values to see if they are valid. */
@@ -182,7 +182,7 @@ namespace acc3d::Graphics
 		auto [shaderRegister, registerSpace] = *shaderRegister_RegisterSpacePair;
 
 		YAML::Node const num32bitValNode = node["num_32_bit_val"];
-		std::optional<int32_t> const num32BitVal = YAML::as_if<int32_t, std::optional<int32_t>>(num32bitValNode)();
+		std::optional<int32_t> const num32BitVal = yaml::AsIf<int32_t>(num32bitValNode);
 
 		if (!(num32bitValNode && num32BitVal))
 		{
@@ -212,8 +212,7 @@ namespace acc3d::Graphics
 		auto [shaderRegister, registerSpace] = *shaderRegister_RegisterSpacePair;
 
 		YAML::Node const rootDescriptorFlagNode = node["root_descriptor_flags"];
-		std::optional<std::string> const rootDescriptorFlagStr = YAML::as_if<std::string, std::optional<std::string>>(
-			rootDescriptorFlagNode)();
+		std::optional<std::string> const rootDescriptorFlagStr = yaml::AsIf<std::string>(rootDescriptorFlagNode);
 
 		if (!rootDescriptorFlagNode)
 		{
@@ -288,14 +287,12 @@ namespace acc3d::Graphics
 				return std::nullopt;
 			}
 
-			auto rangeName = YAML::as_if<std::string, std::optional<std::string>>(rangeNameNode)();
-			auto numDescriptors = YAML::as_if<int32_t, std::optional<int32_t>>(numDescriptorsNode)();
-			auto baseShaderRegister = YAML::as_if<int32_t, std::optional<int32_t>>(baseShaderRegisterNode)();
-			auto registerSpace = YAML::as_if<int32_t, std::optional<int32_t>>(registerSpaceNode)();
-			auto descriptorRangeTypeStr = YAML::as_if<
-				std::string, std::optional<std::string>>(descriptorRangeTypeNode)();
-			auto descriptorRangeFlagsStr = YAML::as_if<std::string, std::optional<std::string>>(
-				descriptorRangeFlagsNode)();
+			auto rangeName = yaml::AsIf<std::string>(rangeNameNode);
+			auto numDescriptors = yaml::AsIf<int32_t>(numDescriptorsNode);
+			auto baseShaderRegister = yaml::AsIf<int32_t>(baseShaderRegisterNode);
+			auto registerSpace = yaml::AsIf<int32_t>(registerSpaceNode);
+			auto descriptorRangeTypeStr = yaml::AsIf<std::string>(descriptorRangeTypeNode);
+			auto descriptorRangeFlagsStr = yaml::AsIf<std::string>(descriptorRangeFlagsNode);
 
 			if (!(rangeName && numDescriptors && baseShaderRegister &&
 				registerSpace && descriptorRangeTypeStr && descriptorRangeFlagsStr))
@@ -342,10 +339,9 @@ namespace acc3d::Graphics
 		YAML::Node const& node, std::string_view parameterName)
 	{
 		YAML::Node const shaderRegisterNode = node["shader_register"];
-		std::optional<int32_t> const shaderRegister = YAML::as_if<
-			int32_t, std::optional<int32_t>>(shaderRegisterNode)();
+		std::optional<int32_t> const shaderRegister = yaml::AsIf<int32_t>(shaderRegisterNode);
 		YAML::Node const registerSpaceNode = node["register_space"];
-		std::optional<int32_t> const registerSpace = YAML::as_if<int32_t, std::optional<int32_t>>(registerSpaceNode)();
+		std::optional<int32_t> const registerSpace = yaml::AsIf<int32_t>(registerSpaceNode);
 
 		if (!(shaderRegisterNode && registerSpaceNode && shaderRegister && registerSpace))
 		{
