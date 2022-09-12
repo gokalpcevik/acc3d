@@ -1,5 +1,5 @@
 #pragma once
-
+#include "../Graphics/Material/RootSignatureFileDeserializer.h"
 #include <SDL2/SDL.h>
 #include <fmt/format.h>
 #include <vector>
@@ -10,6 +10,7 @@
 #include "../Graphics/RendererFactory.h"
 #include "../ECS/Scene.h"
 #include "../ECS/Entity.h"
+#include <functional>
 
 namespace acc3d::Core
 {
@@ -36,6 +37,8 @@ namespace acc3d::Core
 
     private:
         auto Update() -> int32_t;
+        void HandleWindowEvent(Uint32 type);
+        void CalculateAppStats();
 
     private:
         AppStats m_Stats{};

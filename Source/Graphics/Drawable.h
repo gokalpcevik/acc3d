@@ -12,7 +12,7 @@ namespace acc3d::Graphics
     struct Drawable
     {
         Asset::MeshAssetId AssetId;
-        RendererId RendererId = RENDERER_ID_EMPTY_VALUE;
+        RendererId RendererId = RENDERER_ID_EMPTY_KEY_VALUE;
 
         std::unique_ptr<Resource> VertexBuffer;
         std::unique_ptr<Resource> IndexBuffer;

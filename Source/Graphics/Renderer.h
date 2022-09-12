@@ -22,6 +22,7 @@
 #include "RootSignature.h"
 #include "PipelineState.h"
 #include "ShaderLibrary.h"
+#include "RootSignatureLibrary.h"
 #include "Resource.h"
 #include "InfoQueue.h"
 #include "Type.h"
@@ -73,7 +74,12 @@ namespace acc3d::Graphics
         // to possible combine several components into a range, record all the copy commands required for the creation of
         // the drawable object; and then wait until the copy command queue finishes.
         void RegisterMeshRendererComponentDrawable(RendererId rendererId, Asset::MeshAssetId meshAssetId);
-        void DeregisterMeshRendererComponentDrawable(RendererId id);
+
+    	void DeregisterMeshRendererComponentDrawable(RendererId id);
+    private:
+
+        void InitDrawableDenseHashMap();
+
     private:
         Core::Window const *m_Window{nullptr};
 

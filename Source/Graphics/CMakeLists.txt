@@ -10,6 +10,7 @@ target_sources(acc3d PRIVATE
     CommandAllocator.cpp
     Resource.cpp
     RootSignature.cpp
+    RootSignatureLibrary.cpp
     Fence.cpp
     DescriptorHeap.cpp
     ResultHandler.cpp
@@ -19,6 +20,7 @@ target_sources(acc3d PRIVATE
     ShaderReflection.cpp
     Drawable.cpp
     LightContext.cpp
+    Material.cpp
     RendererConfiguration.h
     Type.h)
 

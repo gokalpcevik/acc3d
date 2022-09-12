@@ -60,5 +60,5 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
 
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${CMAKE_SOURCE_DIR}/Material/RootSigDef
-        $<TARGET_FILE_DIR:${PROJECT_NAME}>/Material/RootSigDef)
+        ${CMAKE_SOURCE_DIR}/Materials/RootSignatures
+        $<TARGET_FILE_DIR:${PROJECT_NAME}>/Materials/RootSignatures)

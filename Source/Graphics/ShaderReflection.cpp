@@ -4,6 +4,27 @@ namespace acc3d::Graphics
 {
 	using Microsoft::WRL::ComPtr;
 
+	std::string_view ShaderDataFormatHelper::ShaderDataFormatToString(ShaderDataFormat format)
+	{
+		switch (format)
+		{
+		default: return "DXGI_FORMAT_UNKNOWN";
+		case ShaderDataFormat::Unknown: return "DXGI_FORMAT_UNKNOWN";
+		case ShaderDataFormat::Float32_1: return "DXGI_FORMAT_R32_FLOAT";
+		case ShaderDataFormat::Float32_2: return "DXGI_FORMAT_R32G32_FLOAT";
+		case ShaderDataFormat::Float32_3: return "DXGI_FORMAT_R32G32B32_FLOAT";
+		case ShaderDataFormat::Float32_4: return "DXGI_FORMAT_R32G32B32A32_FLOAT";
+		case ShaderDataFormat::UInt32_1: return "DXGI_FORMAT_R32_UINT";
+		case ShaderDataFormat::UInt32_2: return "DXGI_FORMAT_R32G32_UINT";
+		case ShaderDataFormat::UInt32_3: return "DXGI_FORMAT_R32G32B32_UINT";
+		case ShaderDataFormat::UInt32_4: return "DXGI_FORMAT_R32G32B32A32_UINT";
+		case ShaderDataFormat::SInt32_1: return "DXGI_FORMAT_R32_SINT";
+		case ShaderDataFormat::SInt32_2: return "DXGI_FORMAT_R32G32_SINT";
+		case ShaderDataFormat::SInt32_3: return "DXGI_FORMAT_R32G32B32_SINT";
+		case ShaderDataFormat::SInt32_4: return "DXGI_FORMAT_R32G32B32A32_SINT";
+		}
+	}
+
 	DXGI_FORMAT ShaderDataFormatHelper::ShaderDataFormatToDXGIFormat(ShaderDataFormat format)
 	{
 		switch (format)
@@ -163,5 +184,15 @@ namespace acc3d::Graphics
 
 		return inputLayout;
 
+	}
+
+	void VertexLayout::PrintVertexLayoutInfo() const
+	{
+		for(auto &elem : m_LayoutElements)
+		{
+			acc3d_debug("SemanticName:{0}\nSemanticIndex:{1}\nRegister:{2}\nAlignedByteOffset:{3}\nFormat:{4}\nSize:{5}\n",
+				elem.SemanticName,elem.SemanticIndex,elem.Register,elem.AlignedByteOffset,
+				ShaderDataFormatHelper::ShaderDataFormatToString(elem.Format),elem.Size);
+		}
 	}
 }

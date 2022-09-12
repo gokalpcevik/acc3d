@@ -18,8 +18,8 @@ namespace acc3d::Graphics
 			IID_PPV_ARGS(&m_Resource)));
 	}
 
-	Resource::Resource(Microsoft::WRL::ComPtr<ID3D12Resource> resource)
-		: m_Resource(std::move(resource))
+	Resource::Resource(const Microsoft::WRL::ComPtr<ID3D12Resource>& resource)
+		: m_Resource(resource)
 	{
 	}
 

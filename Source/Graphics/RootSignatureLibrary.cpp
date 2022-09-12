@@ -4,7 +4,6 @@ namespace acc3d::Graphics
 {
 	google::dense_hash_map<RootSignatureId, RootSignature const*> RootSignatureLibrary::s_RootSignatureMap{};
 
-
 	RootSignature const* RootSignatureLibrary::CreateRootSignatureEntry(
 		ID3D12Device* pDevice,
 		std::filesystem::path const& rootSigDescFilePath,
@@ -42,6 +41,7 @@ namespace acc3d::Graphics
 		RootSignatureId id,
 		D3D12_ROOT_SIGNATURE_FLAGS flags)
 	{
+        if(IsLoaded(id)) return Get(id);
 		auto [pBlob, pErrorBlob] = RootSignature::SerializeVersionedRootSignatureWithHighestVersion(pDevice,rootSigDesc);
 		if (pBlob)
 		{
@@ -59,7 +59,35 @@ namespace acc3d::Graphics
 		return nullptr;
 	}
 
-	void RootSignatureLibrary::Init()
+    RootSignature const *RootSignatureLibrary::CreateRootSignatureEntry(ID3D12Device *pDevice,
+                                                                        const RootSignatureFileDeserializer &deserializer,
+                                                                        RootSignatureId id)
+    {
+        if (IsLoaded(id)) return RootSignatureLibrary::Get(id);
+
+        if(deserializer)
+        {
+            auto[pBlob,pErrorBlob] = RootSignature::SerializeVersionedRootSignatureWithHighestVersion(pDevice, deserializer);
+            if (pBlob)
+            {
+                RootSignature const* pRootSig = new RootSignature(pDevice, pBlob->GetBufferPointer(), pBlob->GetBufferSize());
+                s_RootSignatureMap[id] = pRootSig;
+                return pRootSig;
+            }
+            else if(pErrorBlob)
+            {
+                acc3d_error(
+                        "Root signature blob could not be created correctly for root signature "
+                        "description file.\nError:{0}",
+                         static_cast<char const*>(pErrorBlob->GetBufferPointer()));
+                return nullptr;
+            }
+        }
+        return nullptr;
+    }
+
+
+    void RootSignatureLibrary::Init()
 	{
 		s_RootSignatureMap.set_empty_key(ROOT_SIGNATURE_ID_EMPTY_KEY_VALUE);
 		s_RootSignatureMap.set_deleted_key(ROOT_SIGNATURE_ID_DELETED_KEY_VALUE);
@@ -88,4 +116,5 @@ namespace acc3d::Graphics
 	{
 		return s_RootSignatureMap[id];
 	}
+
 }

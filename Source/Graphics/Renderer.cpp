@@ -153,14 +153,15 @@ namespace acc3d::Graphics
 
 		for(size_t i = 0; i < lightView.size(); ++i)
 		{
-			auto entity = lightView[i];
+			if (i >= g_MAX_NUM_OF_DIR_LIGHTS) break;
+			auto const entity = lightView[i];
 			auto entry = scene.GetComponent<ECS::DirectionalLightComponent>(entity);
 			m_LightContext->SetLightEntry(entry, m_CurrentBackBufferIndex, i);
 		}
 
 
-		auto lightGPUHandle = m_LightContext->GetDescriptorHeap(m_CurrentBackBufferIndex)->
-		GetD3D12DescriptorHeapPtr()->GetGPUDescriptorHandleForHeapStart();
+		const auto lightGPUHandle = m_LightContext->GetDescriptorHeap(m_CurrentBackBufferIndex)->
+		                                            GetD3D12DescriptorHeapPtr()->GetGPUDescriptorHandleForHeapStart();
 
 		// We really should set up a material system soon and avoid setting the root signature for every object or per frame.
 		// There could be like 3-4 different fixed root signatures and depending on the entity to be drawed. For example
@@ -181,18 +182,19 @@ namespace acc3d::Graphics
 			gfxCmdList->RSSetViewports(1, &m_Viewport);
 			gfxCmdList->RSSetScissorRects(1, &m_ScissorRect);
 			CD3DX12_CPU_DESCRIPTOR_HANDLE rtv(
-				m_RTVDescriptorHeap->GetD3D12DescriptorHeapPtr()->GetCPUDescriptorHandleForHeapStart(),
-				(m_CurrentBackBufferIndex),
-				m_DescriptorHeapSizeInfo.RTVDescriptorSize);
+                    m_RTVDescriptorHeap->GetD3D12DescriptorHeapPtr()->GetCPUDescriptorHandleForHeapStart(),
+                    m_CurrentBackBufferIndex,
+                    m_DescriptorHeapSizeInfo.RTVDescriptorSize);
 			D3D12_CPU_DESCRIPTOR_HANDLE const depthStencilDescriptor = m_DSVDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
 			gfxCmdList->OMSetRenderTargets(1, &rtv, FALSE, &depthStencilDescriptor);
 
-			float aspectRatio = m_Viewport.Width / m_Viewport.Height;
+			float const aspectRatio = m_Viewport.Width / m_Viewport.Height;
 			
 			XMMATRIX mvpMatrix = XMMatrixMultiply(tc.GetTransformationMatrix(), cameraComponent->ViewMatrix);
 			mvpMatrix = XMMatrixMultiply(mvpMatrix, cameraComponent->GetProjectionMatrix(aspectRatio));
 			gfxCmdList->SetGraphicsRoot32BitConstants(0, sizeof(XMMATRIX) / 4, &mvpMatrix, 0);
-			
+
+
 			gfxCmdList->SetDescriptorHeaps(1UL, &heaps[0]);
 			gfxCmdList->SetGraphicsRootDescriptorTable(1UL, lightGPUHandle);
 
@@ -314,18 +316,21 @@ namespace acc3d::Graphics
 		drawable->IndexBufferView.SizeInBytes = Indices.size() * sizeof(uint32_t);
 		drawable->IndexBufferView.Format = DXGI_FORMAT_R32_UINT;
 
+
 		ShaderCompilationParameters const vertexShaderCompilationParams =
 			ShaderCompilationParameters::Param_CompileVS_StdIncNoFlagsMainEntry(
-				L"Shaders\\diffuse.vsh", SHADER_ID_ENTRY_VALUE::ACC3D_DIFFUSE_VERTEX_SHADER);
+				L"Shaders\\diffuse.vsh", 
+				SHADER_ID_ENTRY_VALUE::ACC3D_DIFFUSE_VERTEX_SHADER);
 
 		ShaderCompilationParameters const pixelShaderCompilationParams =
 			ShaderCompilationParameters::Param_CompilePS_StdIncNoFlagsMainEntry(
-				L"Shaders\\diffuse.psh", SHADER_ID_ENTRY_VALUE::ACC3D_DIFFUSE_PIXEL_SHADER);
+				L"Shaders\\diffuse.psh", 
+				SHADER_ID_ENTRY_VALUE::ACC3D_DIFFUSE_PIXEL_SHADER);
 
 		auto [VertexShaderId, VertexShaderEntry] = ShaderLibrary::CompileAndLoad(vertexShaderCompilationParams);
 		auto [PixelShaderId, PixelShaderEntry] = ShaderLibrary::CompileAndLoad(pixelShaderCompilationParams);
 
-
+		 
 		D3D12_ROOT_SIGNATURE_FLAGS rootSignatureFlags =
 			D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT |
 			D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS |
@@ -360,8 +365,7 @@ namespace acc3d::Graphics
 		
 		drawable->RootSignature = std::make_unique<RootSignature>(device.Get(), rootSignatureBlob->GetBufferPointer(),
 		                                                          rootSignatureBlob->GetBufferSize());
-
-
+		
 		struct PipelineStateStream
 		{
 			CD3DX12_PIPELINE_STATE_STREAM_ROOT_SIGNATURE pRootSignature;
@@ -388,9 +392,7 @@ namespace acc3d::Graphics
 		pipelineStateStream.RTVFormats = rtvFormats;
 		pipelineStateStream.DSVFormat = DXGI_FORMAT_D32_FLOAT;
 
-		D3D12_PIPELINE_STATE_STREAM_DESC pipelineStateStreamDesc = {
-		sizeof(PipelineStateStream), &pipelineStateStream
-		};
+		D3D12_PIPELINE_STATE_STREAM_DESC pipelineStateStreamDesc = { sizeof(PipelineStateStream), &pipelineStateStream };
 
 		drawable->PipelineState = std::make_unique<PipelineState>(device.Get(), &pipelineStateStreamDesc);
 
@@ -413,5 +415,11 @@ namespace acc3d::Graphics
 			m_FenceValue, m_FenceEvent);
 
 		delete m_DrawableMap[id];
+	}
+
+	void Renderer::InitDrawableDenseHashMap()
+	{
+		m_DrawableMap.set_empty_key(RENDERER_ID_EMPTY_KEY_VALUE);
+		m_DrawableMap.set_deleted_key(RENDERER_ID_DELETED_KEY_VALUE);
 	}
 }

@@ -17,6 +17,12 @@ namespace acc3d::Graphics
 			std::filesystem::path const& rootSigDescFilePath, 
 			RootSignatureId id);
 
+        static RootSignature const* CreateRootSignatureEntry(
+                ID3D12Device* pDevice,
+                RootSignatureFileDeserializer const& deserializer,
+                RootSignatureId id
+                );
+
 		static RootSignature const* CreateRootSignatureEntry(
 			ID3D12Device* pDevice,
 			ID3DBlob* pRootSignatureBlob, 
