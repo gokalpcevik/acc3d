@@ -27,7 +27,7 @@ namespace acc3d::Core
     {
         Log::Init();
         m_Window = std::make_unique<Window>(1280, 720, "Direct3D12 Renderer",
-                                            SDL_WINDOW_RESIZABLE);
+                                            SDL_WINDOW_RESIZABLE|SDL_WINDOW_MAXIMIZED);
         if (m_Window->IsNull())
             return -1;
 
@@ -37,11 +37,28 @@ namespace acc3d::Core
 
         m_Scene = std::make_unique<ECS::Scene>(m_Renderer.get());
 
+
     	this->m_Donut = m_Scene->CreateEntity();
-        auto id = Asset::MeshLibrary()("Assets/donut.obj");
-        m_Donut.AddComponent<ECS::MeshRendererComponent>(id);
+        auto donutAssetId = Asset::MeshLibrary()("Assets/donut.obj");
+        Graphics::RootSignatureInitializer rootSigInit
+    	{ "Materials/RootSignatures/diffuse_rootsig.yml",
+    	   Graphics::ACC3D_DIFFUSE_ROOT_SIGNATURE };
+        m_Donut.AddComponent<ECS::MeshRendererComponent>(donutAssetId,rootSigInit);
+
+
+        auto sphereAssetId = Asset::MeshLibrary()("Assets/sphere.obj");
+    	auto sphere = m_Scene->CreateEntity();
+        sphere.AddComponent<ECS::MeshRendererComponent>(sphereAssetId, rootSigInit);
+
         auto& tc = m_Donut.GetComponent<ECS::TransformComponent>();
-        tc.Rotation = DirectX::XMQuaternionRotationRollPitchYaw(0.0f, 90.0f, 90.0f);
+        tc.Translation = { -5.0f,0.0f,0.0f };
+
+        auto cubeAssetId = Asset::MeshLibrary()("Assets/cube.obj");
+        auto cube = m_Scene->CreateEntity();
+    	cube.AddComponent<ECS::MeshRendererComponent>(cubeAssetId, rootSigInit);
+        auto& ctc = cube.GetComponent<ECS::TransformComponent>();
+        ctc.Translation = { +5.0f,0.0f,0.0f };
+
 
         this->m_Camera = m_Scene->CreateEntity();
         auto&cc = m_Camera.AddComponent<ECS::CameraComponent>(true);
@@ -58,14 +75,9 @@ namespace acc3d::Core
 
         auto& dlc = m_Light.AddComponent<ECS::DirectionalLightComponent>();
         dlc.Intensity = 1.0f;
-        dlc.Direction = { -0.485f , +0.727f , -0.485f };
-        dlc.Color = { 0.0f,0.0f,1.0f };
-
-
-        auto& dlc2 = m_Light2.AddComponent<ECS::DirectionalLightComponent>();
-        dlc2.Intensity = 1.0f;
-        dlc2.Direction = { +0.485f , +0.727f , +0.485f };
-        dlc2.Color = { 1.0f,0.0f,0.0f };
+        Eigen::Vector3f direction{ 1.0f , -0.5f, +1.0f };
+        dlc.Direction = *(DirectX::XMFLOAT3*)&(direction.normalized());
+        dlc.Color = { 1.0f,1.0f, 0.85f };
 
         return Update();
     }
@@ -74,89 +86,47 @@ namespace acc3d::Core
     {
         while (m_Running)
         {
-            auto const counter = SDL_GetPerformanceCounter();
-            m_Stats.m_FrameTime = counter - m_Stats.m_LastTickCount;
-            m_Stats.m_LastTickCount = counter;
+            this->CalculateAppStats();
 
             while (m_Window->PollEvents())
             {
-                switch (m_Window->GetEvent().type)
-                {
-                    case SDL_QUIT:
-                    {
-                        return 0;
-                    }
-                    case SDL_WINDOWEVENT:
-                    {
-                        switch (m_Window->GetEvent().window.event)
-                        {
-                            case SDL_WINDOWEVENT_RESIZED:
-                            {
-                                int w = m_Window->GetEvent().window.data1;
-                                int h = m_Window->GetEvent().window.data2;
-                                m_Renderer->Resize(w, h);
-                                break;
-                            }
-                            default:
-                                break;
-                        }
-                    }
-                }
+                this->HandleWindowEvent(m_Window->GetEvent().type);
             }
-            
+
+            if (Input::IsKeyPressed(SDL_SCANCODE_F2))
+            {
+                m_Window->SetTitle(fmt::format("Direct3D12 Renderer - FPS: {0:.1f}, Frame Time: {1:.1f}", m_Stats.GetFramesPerSecond(), m_Stats.GetFrameTime()).c_str());
+            }
+
             if (Input::IsKeyPressed(SDL_SCANCODE_ESCAPE))
             {
                 m_Running = false;
             }
 
-            if(Input::IsKeyPressed(SDL_SCANCODE_F1))
+            if (Input::IsKeyPressed(SDL_SCANCODE_F1))
             {
                 m_Scene->DestroyAllComponentsOfType<ECS::MeshRendererComponent>();
             }
 
+
             auto&& cc = m_Camera.GetComponent<ECS::CameraComponent>();
 
+            DirectX::XMVECTOR const focusPoint = DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
 
-            if(Input::IsKeyPressed(SDL_SCANCODE_R))
-            {
-                cc.FOVHalfAngle += 0.001f * m_Stats.GetFrameTime();
-            }
-        	else if(Input::IsKeyPressed(SDL_SCANCODE_T))
-            {
-                cc.FOVHalfAngle -= 0.001f * m_Stats.GetFrameTime();
-            }
+            static DirectX::XMFLOAT4 EyePosition = { 0.0f,0.0f,-5.0f,1.0f };
 
-
-            m_Window->SetTitle(fmt::format("FPS: {0:.2f}, Frame Time: {1:.2f}", m_Stats.GetFramesPerSecond(), m_Stats.GetFrameTime()).c_str());
-            
+            if (Input::IsKeyPressed(SDL_SCANCODE_UP))
+                EyePosition.y += 0.05f;
+            else if (Input::IsKeyPressed(SDL_SCANCODE_DOWN))
+                EyePosition.y -= 0.05f;
 
 
-            auto& tc = m_Donut.GetComponent<ECS::TransformComponent>();
+            const DirectX::XMVECTOR eyePositionVec = DirectX::XMLoadFloat4(&EyePosition);
+            const DirectX::XMVECTOR upDirection = DirectX::XMVectorSet(0, 1, 0, 0);
+            cc.ViewMatrix = DirectX::XMMatrixLookAtLH(eyePositionVec, focusPoint, upDirection);
 
-            static float Roll = 0.0f;
-            static float Pitch = 0.0f;
-            static float Yaw = 0.0f;
-
-            if (Input::IsKeyPressed(SDL_SCANCODE_1))
-                Roll += 0.01f;
-            if (Input::IsKeyPressed(SDL_SCANCODE_2))
-                Roll -= 0.01f;
-
-            if (Input::IsKeyPressed(SDL_SCANCODE_3))
-                Pitch += 0.01f;
-            if (Input::IsKeyPressed(SDL_SCANCODE_4))
-                Pitch -= 0.01f;
-
-            if (Input::IsKeyPressed(SDL_SCANCODE_5))
-                Yaw += 0.01f;
-            if (Input::IsKeyPressed(SDL_SCANCODE_6))
-                Yaw -= 0.01f;
-
-
-            tc.Rotation = DirectX::XMQuaternionRotationRollPitchYaw(Roll , Pitch , Yaw);
-
-
-            const FLOAT clearColor[] = {0.1f, 0.1f, 0.1f, 1.0f};
+          
+            FLOAT constexpr clearColor[] = { 0.05f, 0.05f, 0.05f, 1.0f };
 
             m_Renderer->Clear(clearColor);
             m_Renderer->RenderScene(*m_Scene);
@@ -164,5 +134,39 @@ namespace acc3d::Core
         }
         SDL_Quit();
         return 0;
+    }
+
+    void Application::HandleWindowEvent(Uint32 type)
+    {
+        switch (type)
+        {
+        case SDL_QUIT:
+        {
+            m_Running = false;
+            return;
+        }
+        case SDL_WINDOWEVENT:
+        {
+            switch (m_Window->GetEvent().window.event)
+            {
+            case SDL_WINDOWEVENT_RESIZED:
+            {
+                int w = m_Window->GetEvent().window.data1;
+                int h = m_Window->GetEvent().window.data2;
+                m_Renderer->Resize(w, h);
+                break;
+            }
+            default:
+                break;
+            }
+        }
+        }
+    }
+
+    void Application::CalculateAppStats()
+    {
+        auto const counter = SDL_GetPerformanceCounter();
+        m_Stats.m_FrameTime = counter - m_Stats.m_LastTickCount;
+        m_Stats.m_LastTickCount = counter;
     }
 }

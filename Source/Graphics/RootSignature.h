@@ -11,7 +11,7 @@ namespace acc3d::Graphics
 	{
 	public:
 		RootSignature(ID3D12Device* pDevice,void const* pBlobWithRootSignature, SIZE_T blobLengthInBytes);
-		
+
 
 		static std::pair<Microsoft::WRL::ComPtr<ID3DBlob>, Microsoft::WRL::ComPtr<ID3DBlob>>
 		SerializeVersionedRootSignatureWithHighestVersion(ID3D12Device* pDevice,

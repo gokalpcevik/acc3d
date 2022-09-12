@@ -1,6 +1,7 @@
 #pragma once
 #include <Eigen/Eigen>
 #include <cstdint>
+#include <filesystem>
 
 namespace acc3d::Graphics
 {
@@ -27,7 +28,7 @@ namespace acc3d::Graphics
 
 	enum ROOT_SIG_ENTRY_VALUE : RootSignatureId
 	{
-		ACC3D_DIFFUSE_ROOT_SIG = 0x33640DDCULL
+		ACC3D_DIFFUSE_ROOT_SIGNATURE = 0x33640DDCULL
 	};
 
 
@@ -35,6 +36,12 @@ namespace acc3d::Graphics
 	{
 		Eigen::Vector3f Position{0.0f, 0.0f, 0.0f};
 		Eigen::Vector3f Normal{1.0f, 1.0f, 1.0f};
+	};
+
+	struct RootSignatureInitializer
+	{
+		std::filesystem::path RootSignaturePath;
+		acc3d::Graphics::RootSignatureId RootSignatureId;
 	};
 
 }

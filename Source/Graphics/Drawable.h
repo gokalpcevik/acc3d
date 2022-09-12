@@ -14,22 +14,23 @@ namespace acc3d::Graphics
         Asset::MeshAssetId AssetId;
         RendererId RendererId = RENDERER_ID_EMPTY_KEY_VALUE;
 
+    	/*
+		*  •The root signature is the object that represents the link between the command list and the resources/constants
+        * used by the pipeline.
+        *
+        *  •It specifies the data that the shaders should expect from the application; and also which pipeline state objects
+        *  are compatible for the next draw/dispatch calls.
+        *
+        */
+        RootSignatureId RootSignatureId = ROOT_SIGNATURE_ID_EMPTY_KEY_VALUE;
+
+
         std::unique_ptr<Resource> VertexBuffer;
         std::unique_ptr<Resource> IndexBuffer;
         D3D12_VERTEX_BUFFER_VIEW VertexBufferView;
         D3D12_INDEX_BUFFER_VIEW IndexBufferView;
         size_t IndicesCount = 0;
 
-        /*
-         *  •The root signature is the object that represents the link between the command list and the resources/constants
-         * used by the pipeline.
-         *
-         *  •It specifies the data that the shaders should expect from the application; and also which pipeline state objects
-         *  are compatible for the next draw/dispatch calls.
-         *
-         */
-
-        std::unique_ptr<RootSignature> RootSignature;
 
         std::unique_ptr<PipelineState> PipelineState;
         /*

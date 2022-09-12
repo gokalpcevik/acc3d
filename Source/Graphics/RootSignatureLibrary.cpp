@@ -34,6 +34,12 @@ namespace acc3d::Graphics
 		return nullptr;
 	}
 
+	RootSignature const* RootSignatureLibrary::CreateRootSignatureEntry(ID3D12Device* pDevice,
+		RootSignatureInitializer const& init)
+	{
+		return CreateRootSignatureEntry(pDevice, init.RootSignaturePath, init.RootSignatureId);
+	}
+
 	RootSignature const* RootSignatureLibrary::CreateRootSignatureEntry(
 		ID3D12Device* pDevice,
 		ID3DBlob* pRootSignatureBlob,

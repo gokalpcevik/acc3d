@@ -73,7 +73,10 @@ namespace acc3d::Graphics
         // for the copy operation of the buffers/resources. An ideal mesh renderer component register function would be
         // to possible combine several components into a range, record all the copy commands required for the creation of
         // the drawable object; and then wait until the copy command queue finishes.
-        void RegisterMeshRendererComponentDrawable(RendererId rendererId, Asset::MeshAssetId meshAssetId);
+        void RegisterMeshRendererComponentDrawable(
+            Asset::MeshAssetId meshAssetId, 
+            RendererId& assignedRendererId,
+            RootSignatureInitializer const& rootSigInit);
 
     	void DeregisterMeshRendererComponentDrawable(RendererId id);
     private:

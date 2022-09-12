@@ -1,6 +1,7 @@
 struct Transformation
 {
     matrix MVP;
+    matrix Model;
 };
 
 struct VertexShaderInput
@@ -21,5 +22,5 @@ void main(in VertexShaderInput VSIn,
     out VertexShaderOutput VSOut)
 {
     VSOut.Position = mul(TransformationCB.MVP, float4(VSIn.Position, 1.0f));
-    VSOut.Normal = mul( TransformationCB.MVP , float4(VSIn.Normal, 0.0f)).xyz;
+    VSOut.Normal = mul(TransformationCB.Model,float4(VSIn.Normal,0.0f)).xyz;
 }
