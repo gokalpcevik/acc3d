@@ -126,7 +126,7 @@ namespace acc3d::Graphics
 
 		if(cameraView.size() == 0)
 		{
-			acc3d_error("There is no camera to render the scene with.");
+			acc3d_warn("There is no camera to render the scene with.");
 			return;
 		}
 
@@ -140,7 +140,13 @@ namespace acc3d::Graphics
 			}
 		}
 
-		const auto meshRenderGroup = scene.GetEnTTRegistryMutable().group<ECS::MeshRendererComponent, ECS::TransformComponent>();
+		if(cameraComponent == nullptr)
+		{
+			acc3d_warn("There is no primary camera set to render the scene with.");
+			return;
+		}
+
+		const auto meshRenderView = scene.GetEnTTRegistryMutable().view<ECS::MeshRendererComponent, ECS::TransformComponent>();
 
 		ComPtr<ID3D12GraphicsCommandList2> const& gfxCmdList = m_GfxCmdList->GetD3D12GraphicsCommandList();
 
@@ -159,10 +165,11 @@ namespace acc3d::Graphics
 			m_LightContext->SetLightEntry(entry, m_CurrentBackBufferIndex, i);
 		}
 
-		CD3DX12_CPU_DESCRIPTOR_HANDLE rtv(
+		const CD3DX12_CPU_DESCRIPTOR_HANDLE rtv(
 			m_RTVDescriptorHeap->GetD3D12DescriptorHeapPtr()->GetCPUDescriptorHandleForHeapStart(),
 			m_CurrentBackBufferIndex,
 			m_DescriptorHeapSizeInfo.RTVDescriptorSize);
+
 		D3D12_CPU_DESCRIPTOR_HANDLE const depthStencilDescriptor = m_DSVDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
 		gfxCmdList->OMSetRenderTargets(1, &rtv, FALSE, &depthStencilDescriptor);
 
@@ -174,26 +181,26 @@ namespace acc3d::Graphics
 		const auto lightGPUHandle = m_LightContext->GetDescriptorHeap(m_CurrentBackBufferIndex)->
 		                                            GetD3D12DescriptorHeapPtr()->GetGPUDescriptorHandleForHeapStart();
 
+
+		RootSignature const* pRootSignature = RootSignatureLibrary::Get(ACC3D_DIFFUSE_ROOT_SIGNATURE);
+		gfxCmdList->SetGraphicsRootSignature(pRootSignature->GetD3D12RootSignaturePtr());
+
 		// We really should set up a material system soon and avoid setting the root signature for every object or per frame.
 		// There could be like 3-4 different fixed root signatures and depending on the entity to be drawed. For example
 		// if the entity has a MeshRendererComponent and wants to receive light information, (something like setting a variable
 		// mrc.ReceivesLight = true) it could use the a root signature that describes all the light information layout
 		// in the scene and of course some other information like primary camera position as well.
-		for (const auto entity : meshRenderGroup)
+		for (const auto entity : meshRenderView)
 		{
 			// tc:TransformComponent, mrc:MeshRendererComponent
-			auto [mrc,tc] = meshRenderGroup.get(entity);
+			auto [mrc,tc] = meshRenderView.get(entity);
 			Drawable const* drawable = m_DrawableMap[ECS::RIDAccessor()(mrc)];
-
-			RootSignature const* pRootSignature = RootSignatureLibrary::Get(drawable->RootSignatureId);
-
-			gfxCmdList->SetGraphicsRootSignature(pRootSignature->GetD3D12RootSignaturePtr());
 
 			gfxCmdList->SetPipelineState(drawable->PipelineState->GetD3D12PipelineState().Get());
 			gfxCmdList->IASetVertexBuffers(0UL, 1UL, &drawable->VertexBufferView);
 			gfxCmdList->IASetIndexBuffer(&drawable->IndexBufferView);
+
 			gfxCmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST) ;
-			
 			
 			struct
 			{
@@ -201,15 +208,19 @@ namespace acc3d::Graphics
 				XMMATRIX Model;
 			} MVP_MODEL;
 
-			MVP_MODEL.Mvp = XMMatrixMultiply(tc.GetTransformationMatrix(), cameraComponent->ViewMatrix);
+			MVP_MODEL.Mvp = XMMatrixMultiply(tc.GetTransformationMatrix(), cameraComponent->GetViewMatrix());
 			MVP_MODEL.Mvp = XMMatrixMultiply(MVP_MODEL.Mvp, cameraComponent->GetProjectionMatrix(aspectRatio));
 
 			MVP_MODEL.Model = tc.GetTransformationMatrix();
 
-			gfxCmdList->SetGraphicsRoot32BitConstants(1ULL, 2 * sizeof(XMMATRIX) / 4, &MVP_MODEL, 0);
 
+			// Model-View-Projection and Model matrices
+			gfxCmdList->SetGraphicsRoot32BitConstants(1UL, 2 * sizeof(XMMATRIX) / 4, &MVP_MODEL, 0);
+
+			// Directional Light data
 			gfxCmdList->SetDescriptorHeaps(1UL, &heaps[0]);
-			gfxCmdList->SetGraphicsRootDescriptorTable(0ULL, lightGPUHandle);
+			gfxCmdList->SetGraphicsRootDescriptorTable(0UL, lightGPUHandle);
+
 
 			gfxCmdList->DrawIndexedInstanced(drawable->IndicesCount, 1, 0, 0, 0);
 		}
@@ -383,21 +394,19 @@ namespace acc3d::Graphics
 		m_LoadCmdList->GetD3D12GraphicsCommandListPtr()->Close();
 		ID3D12CommandList* const commandLists[] = { m_LoadCmdList->GetD3D12GraphicsCommandListPtr() };
 
-		Synchronizer::Flush(m_DirectCmdQueue->GetD3D12CommandQueuePtr(), m_Fence->GetD3D12FencePtr(),
-			m_FenceValue, m_FenceEvent);
+		
 
 		m_CopyCmdQueue->GetD3D12CommandQueuePtr()->ExecuteCommandLists(1UL, commandLists);
 		Synchronizer::IncrementAndSignal(m_CopyCmdQueue->GetD3D12CommandQueuePtr(), m_CopyFence->GetD3D12FencePtr(),
 		                                 m_CopyFenceValue);
 		Synchronizer::WaitForFenceValue(m_CopyFence->GetD3D12FencePtr(), m_CopyFenceValue, m_CopyFenceEvent);
+
 		m_DrawableMap[drawable->RendererId] = drawable;
+
 	}
 
 	void Renderer::DeregisterMeshRendererComponentDrawable(RendererId id)
 	{
-		Synchronizer::Flush(m_DirectCmdQueue->GetD3D12CommandQueuePtr(), m_Fence->GetD3D12FencePtr(),
-			m_FenceValue, m_FenceEvent);
-
 		delete m_DrawableMap[id];
 	}
 

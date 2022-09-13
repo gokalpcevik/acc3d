@@ -69,10 +69,6 @@ namespace acc3d::Graphics
 
     	[[nodiscard]] RendererId GenerateRendererId();
 
-        // This function is not ideal because every time this gets called, we have to perform a flush followed by a stall
-        // for the copy operation of the buffers/resources. An ideal mesh renderer component register function would be
-        // to possible combine several components into a range, record all the copy commands required for the creation of
-        // the drawable object; and then wait until the copy command queue finishes.
         void RegisterMeshRendererComponentDrawable(
             Asset::MeshAssetId meshAssetId, 
             RendererId& assignedRendererId,
