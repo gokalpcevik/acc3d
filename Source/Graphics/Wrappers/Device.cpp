@@ -31,14 +31,13 @@ namespace acc3d::Graphics
         }
 
         bool dedicatedAdapterFound = false;
-        ComPtr<IDXGIAdapter1> adapter;
         for (UINT adapterIndex = 0;
              DXGI_ERROR_NOT_FOUND != DXGIFactory6->EnumAdapterByGpuPreference(
-                     adapterIndex, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, IID_PPV_ARGS(&adapter)); ++
+                     adapterIndex, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, IID_PPV_ARGS(&m_DXGIAdapter)); ++
                      adapterIndex)
         {
             DXGI_ADAPTER_DESC1 desc{};
-            hr = adapter->GetDesc1(&desc);
+            hr = m_DXGIAdapter->GetDesc1(&desc);
             if (FAILED(hr))
                 continue;
             // Skip the basic driver adapter.
@@ -46,7 +45,7 @@ namespace acc3d::Graphics
                 continue;
 
             if (SUCCEEDED(
-                    D3D12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_11_0,
+                    D3D12CreateDevice(m_DXGIAdapter.Get(), D3D_FEATURE_LEVEL_11_0,
                                       _uuidof(ID3D12Device), nullptr)))
             {
                 dedicatedAdapterFound = true;
@@ -70,7 +69,7 @@ namespace acc3d::Graphics
             return;
         }
 
-        hr = D3D12CreateDevice(adapter.Get(),
+        hr = D3D12CreateDevice(m_DXGIAdapter.Get(),
                                D3D_FEATURE_LEVEL_11_0,
                                IID_PPV_ARGS(&m_Device));
 
@@ -123,17 +122,22 @@ namespace acc3d::Graphics
         return tearingAllowed == TRUE;
     }
 
-    ID3D12Device *Device::GetD3D12DevicePtr()
+    ID3D12Device *Device::GetD3D12DevicePtr() const
     { return m_Device.Get(); }
 
-    Microsoft::WRL::ComPtr<ID3D12Device2> Device::GetD3D12Device2()
+    Microsoft::WRL::ComPtr<ID3D12Device2> Device::GetD3D12Device2() const
     {
         ComPtr<ID3D12Device2> device2; m_Device.As(&device2);
         return device2;
     }
 
-    IDXGIFactory3 *Device::GetDXGIFactory()
+    IDXGIFactory3 *Device::GetDXGIFactoryPtr()
     { return m_DXGIFactory.Get(); }
+
+    IDXGIAdapter1* Device::GetDXGIAdapterPtr()
+    {
+        return m_DXGIAdapter.Get();
+    }
 }
 
 // namespace acc3d

@@ -1,17 +1,12 @@
 #pragma once
-#include <fstream>
-#include <sstream>
 #include <d3d12.h>
+#include <D3D12MemAlloc.h>
+#include <DirectXMath.h>
 #include <wrl.h>
 #include <filesystem>
 #include <cstdint>
-#include <optional>
-#include <algorithm>
-#include <yaml-cpp/yaml.h>
-#include "RootSignature.h"
-#include "Type.h"
-#include "../Core/Log.h"
-#include "RootSignatureLibrary.h"
+#include <directxtk12/WICTextureLoader.h>
+#include <directxtk12/DDSTextureLoader.h>
 
 namespace acc3d::Graphics
 {
@@ -24,36 +19,45 @@ namespace acc3d::Graphics
 	 * - For a PBR material for example, we'd create a class derived from Material class as base, we'd have functions
 	 * to control and change diffuse, roughness, metallic, ambient occlusion textures. We should be able to even control the
 	 * fresnel function, normal distribution function and so on.
-	 *
-	 * 
 	 */
 
-	/* ATM This is just a general idea/test of what it should look like. */
+	/*
+	 * ATM This is just a general idea/test of what it should look like.
+	 */
+
+	struct OptionalMaterialData
+	{
+		DirectX::XMMATRIX Mvp;
+		DirectX::XMMATRIX Model;
+		DirectX::XMVECTOR CameraPosition;
+	};
 
 	class Material
 	{
-    public:
-		explicit Material(std::filesystem::path const& pathToMaterialFile, RootSignatureId rootSignatureId);
+	public:
+		Material() = default;
+		virtual ~Material() = default;
+		virtual void Populate(ID3D12Device* pDevice, D3D12MA::Allocator* pAllocator) = 0;
 
-		[[nodiscard]] RootSignatureId GetRootSignatureId() const;
-
-        template<typename T>
-        void Set32BitConstant(ID3D12GraphicsCommandList2* pGfxCmdList, UINT rootParameterIndex,T
-        data,UINT destOffsetIn32BitValues = 0) const;
-
-        void SetGraphicsRootSignature(ID3D12GraphicsCommandList2* pGfxCmdList) const;
-
-	private:
-		RootSignatureId m_RootSignatureId = ROOT_SIGNATURE_ID_EMPTY_KEY_VALUE;
+		virtual void BeforeDraw(OptionalMaterialData const& data) = 0;
 	};
 
-    template<typename T>
-    void Material::Set32BitConstant(ID3D12GraphicsCommandList2* pGfxCmdList, UINT rootParameterIndex,T
-    data,UINT destOffsetIn32BitValues) const
-    {
-        static_assert(sizeof(T) >= 4, "Material::Set32BitConstants<T>() needs a type that is "
-                                      "at least 32 bits.");
-        pGfxCmdList->SetGraphicsRoot32BitConstant(rootParameterIndex,data,destOffsetIn32BitValues);
-    }
+	struct PBRMaterialDescription
+	{
+		std::filesystem::path DiffuseTexturePath{};
+		std::filesystem::path MetallicTexturePath{};
+		std::filesystem::path RoughnessTexturePath{};
+		std::filesystem::path AmbientOcclusionTexturePath{};
+	};
 
+	class PBRMaterial : public Material
+	{
+	public:
+		explicit PBRMaterial(PBRMaterialDescription desc);
+
+		void Populate(ID3D12Device* pDevice, D3D12MA::Allocator* pAllocator) override;
+		void BeforeDraw(OptionalMaterialData const& data) override;
+	private:
+		PBRMaterialDescription m_Desc;
+	};
 }

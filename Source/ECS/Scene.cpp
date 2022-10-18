@@ -49,17 +49,26 @@ namespace acc3d::ECS
     {
     }
 
-    void Scene::OnConstructMeshRendererComponent(entt::registry& registry, entt::entity entity) const
+    void Scene::Shutdown()
+    {
+        this->DestroyAllComponentsOfType<MeshRendererComponent>();
+    }
+
+    void Scene::OnConstructMeshRendererComponent(entt::registry& registry, entt::entity entity)
     {
         auto& meshRendererComponent = registry.get<MeshRendererComponent>(entity);
         m_Renderer->RegisterMeshRendererComponentDrawable(meshRendererComponent.MeshAssetId,
             RIDAccessor()(meshRendererComponent), 
             meshRendererComponent.RootSignatureDescription);
+        m_Registry.sort<MeshRendererComponent>([](const MeshRendererComponent& lhs, const MeshRendererComponent& rhs)
+        {
+                return lhs.RootSignatureDescription.RootSignatureId > rhs.RootSignatureDescription.RootSignatureId;
+        });
+      
     }
 
     void Scene::OnDestroyMeshRendererComponent(entt::registry& registry, entt::entity entity) const
     {
-        acc3d_trace("Deregistering mesh renderer component with id 0x{0:X}", RIDAccessor()(registry.get<MeshRendererComponent>(entity)));
         m_Renderer->DeregisterMeshRendererComponentDrawable(
 	    RIDAccessor()(registry.get<MeshRendererComponent>(entity)));
     }

@@ -18,6 +18,19 @@ namespace acc3d::Graphics
             return {nullptr};
         }
 
+        D3D12MA::ALLOCATOR_DESC allocatorDescription = {};
+        allocatorDescription.pDevice = pDevice->GetD3D12DevicePtr();
+        allocatorDescription.pAdapter = pDevice->GetDXGIAdapterPtr();
+
+        D3D12MA::Allocator* pAllocator = nullptr;
+        HRESULT hr = D3D12MA::CreateAllocator(&allocatorDescription, &pAllocator);
+
+        if(FAILED(hr))
+        {
+            acc3d_error("D3D12MA::Allocator creation failed.");
+            return { nullptr };
+        }
+
         auto pCmdQueue = std::make_unique<CommandQueue>(pDevice->GetD3D12DevicePtr(),
                                                         D3D12_COMMAND_LIST_TYPE_DIRECT);
 
@@ -30,7 +43,7 @@ namespace acc3d::Graphics
             return {nullptr};
         }
 
-        auto pSwapChain = std::make_unique<SwapChain>(pDevice->GetDXGIFactory(),
+        auto pSwapChain = std::make_unique<SwapChain>(pDevice->GetDXGIFactoryPtr(),
                                                       pCmdQueue->m_CmdQueue.Get(), window,
                                                       pDevice.get());
         if (!pSwapChain)
@@ -50,13 +63,14 @@ namespace acc3d::Graphics
                         pDevice->GetD3D12DevicePtr()) ;
 
         auto pLightContext = std::make_unique<LightContext>();
-        pLightContext->Populate(pDevice->GetD3D12DevicePtr());
+        pLightContext->Populate(pDevice->GetD3D12DevicePtr(),pAllocator);
 
         auto pRenderer = std::make_unique<Renderer>();
 
         pRenderer->m_Device = std::move(pDevice);
         pRenderer->m_SwapChain = std::move(pSwapChain);
-        pRenderer->m_DirectCmdQueue = std::move(pCmdQueue);
+        pRenderer->m_Allocator = pAllocator;
+    	pRenderer->m_DirectCmdQueue = std::move(pCmdQueue);
         pRenderer->m_CopyCmdQueue = std::move(pCopyCmdQueue);
         pRenderer->m_Fence = std::move(pDirectFence);
         pRenderer->m_CopyFence = std::move(pCopyFence);
@@ -93,6 +107,7 @@ namespace acc3d::Graphics
         pRenderer->UpdateRenderTargetViews();
         pRenderer->ResizeDepthBuffer(window.GetSurfaceWidth(),window.GetSurfaceHeight());
 
+        pRenderer->InitializeImGui();
     	return std::move(pRenderer);
     }
 }

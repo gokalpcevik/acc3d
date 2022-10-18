@@ -39,11 +39,11 @@ namespace acc3d::Graphics
 	}
 
 
-	void Resource::UpdateBufferResource(ID3D12GraphicsCommandList2* pCmdList, size_t NumElems, size_t ElemSize,
+	void Resource::CreateAndUpdateBufferResource(ID3D12GraphicsCommandList2* pCmdList, size_t NumElems, size_t ElemSize,
 	                                    void const* pBufferData, D3D12_RESOURCE_FLAGS flags)
 	{
 		ComPtr<ID3D12Resource> intermediateResource;
-		Resource::UpdateBufferResource(m_Device, pCmdList, &m_Resource, &intermediateResource, NumElems, ElemSize,
+		Resource::CreateAndUpdateBufferResource(m_Device, pCmdList, &m_Resource, &intermediateResource, NumElems, ElemSize,
 		                               pBufferData, flags);
 	}
 
@@ -53,10 +53,16 @@ namespace acc3d::Graphics
 		Resource::TransitionAndBarrier(m_Resource.Get(), pGfxCmdList, stateBefore, stateAfter);
 	}
 
-	void Resource::UpdateBufferResource(ID3D12Device* pDevice, ID3D12GraphicsCommandList2* pCmdList,
+	void Resource::TransitionAndBarrier(ID3D12GraphicsCommandList2* pGfxCmdList, ID3D12Resource* pResource,
+		D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter)
+	{
+		Resource::TransitionAndBarrier(pResource, pGfxCmdList, stateBefore, stateAfter);
+	}
+
+	void Resource::CreateAndUpdateBufferResource(ID3D12Device* pDevice, ID3D12GraphicsCommandList2* pCmdList,
 	                                    ID3D12Resource** pDestinationResource,
 	                                    ID3D12Resource** pIntermediateResource, size_t NumElems, size_t ElemSize, 
-										void const* bufferData, D3D12_RESOURCE_FLAGS flags)
+	                                    void const* bufferData, D3D12_RESOURCE_FLAGS flags)
 	{
 		size_t const bufferSizeInBytes = NumElems * ElemSize;
 
@@ -93,11 +99,11 @@ namespace acc3d::Graphics
 		}
 	}
 
-	void Resource::UpdateBufferResource(ID3D12Device* pDevice, ID3D12GraphicsCommandList2* pCmdList,
+	void Resource::CreateAndUpdateBufferResource(ID3D12Device* pDevice, ID3D12GraphicsCommandList2* pCmdList,
 		Resource& DestinationResource,Resource& IntermediateResource, size_t NumElems, size_t ElemSize,
 		void const* bufferData, D3D12_RESOURCE_FLAGS flags)
 	{
-		Resource::UpdateBufferResource(pDevice, pCmdList, &DestinationResource.m_Resource, &IntermediateResource.m_Resource, NumElems, ElemSize,bufferData, flags);
+		Resource::CreateAndUpdateBufferResource(pDevice, pCmdList, &DestinationResource.m_Resource, &IntermediateResource.m_Resource, NumElems, ElemSize,bufferData, flags);
 	}
 
 	void Resource::TransitionAndBarrier(ID3D12Resource* pResource, ID3D12GraphicsCommandList2* pGfxCmdList,

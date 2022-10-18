@@ -2,8 +2,8 @@
 #include <d3d12.h>
 #include <d3dx12.h>
 #include <wrl/client.h>
-#include "ResultHandler.h"
-#include "Material/RootSignatureFileDeserializer.h"
+#include "../ResultHandler.h"
+#include "../Material/RootSignatureFileDeserializer.h"
 
 namespace acc3d::Graphics
 {

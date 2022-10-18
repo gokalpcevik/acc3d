@@ -20,6 +20,8 @@ struct PixelShaderOutput
     float4 Color : SV_Target;
 };
 
+Texture2D <float4> DiffuseMap : register(t0, space0);
+sampler2D DefaultSampler : register(s0, space0);
 
 void main(in PixelShaderInput PSIn,out PixelShaderOutput PSOut)
 {

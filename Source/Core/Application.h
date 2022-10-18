@@ -1,5 +1,4 @@
 #pragma once
-#include "../Graphics/Material/RootSignatureFileDeserializer.h"
 #include <SDL2/SDL.h>
 #include <fmt/format.h>
 #include <vector>
@@ -10,7 +9,8 @@
 #include "../Graphics/RendererFactory.h"
 #include "../ECS/Scene.h"
 #include "../ECS/Entity.h"
-#include <functional>
+#include "../Graphics/Material.h"
+#include "../Graphics/Memory/DescriptorAllocator.h"
 
 namespace acc3d::Core
 {
@@ -34,11 +34,12 @@ namespace acc3d::Core
         static auto Get() -> Application &;
 
         auto Start() -> int32_t;
-
+        auto GetRenderer() const->std::unique_ptr<Graphics::Renderer> const& { return m_Renderer; }
     private:
         auto Update() -> int32_t;
         void HandleWindowEvent(Uint32 type);
         void CalculateAppStats();
+        void DrawStatsAndSettings();
 
     private:
         AppStats m_Stats{};
@@ -49,9 +50,14 @@ namespace acc3d::Core
         std::unique_ptr<Graphics::Renderer> m_Renderer;
         std::unique_ptr<ECS::Scene> m_Scene;
 
-        ECS::Entity m_Donut;
+        uint32_t m_ViewportWidth;
+        uint32_t m_ViewportHeight;
+
+        ECS::Entity m_Spheres[4][4];
+
         ECS::Entity m_Camera;
         ECS::Entity m_Light;
-        ECS::Entity m_Light2;
+        Eigen::Vector2i m_PrevCursorPosition { 0.0f, 0.0f};
+        float m_RendererClearColor[4] = {0.15f,0.15f,0.15f,1.0f};
     };
 }

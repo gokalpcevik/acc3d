@@ -3,10 +3,10 @@
 #include <dxgi1_6.h>
 #include <d3d12.h>
 #include <wrl/client.h>
-#include "ResultHandler.h"
+#include "../ResultHandler.h"
 #include "Device.h"
-#include "../Core/Window.h"
-#include "RendererConfiguration.h"
+#include "../../Core/Window.h"
+#include "../RendererConfiguration.h"
 
 namespace acc3d::Graphics
 {

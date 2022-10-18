@@ -1,2 +1,3 @@
 target_sources(acc3d PRIVATE
+	MaterialDeserializer.cpp
 	RootSignatureFileDeserializer.cpp)

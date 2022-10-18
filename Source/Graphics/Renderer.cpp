@@ -7,6 +7,7 @@ namespace acc3d::Graphics
 
 	void Renderer::Clear(const FLOAT* clearColor) const
 	{
+		m_FrameDrawCallCount = 0;
 
 /*
  * ------------------------RESOURCE BARRIER / MEMBER VAR ALIASES----------------------------------
@@ -54,15 +55,15 @@ namespace acc3d::Graphics
 
 	void Renderer::Present()
 	{
-		auto cmdList = m_GfxCmdList->GetD3D12GraphicsCommandListPtr();
-		auto& backBuffer = m_BackBuffers[m_CurrentBackBufferIndex];
+		ID3D12GraphicsCommandList2* gfxCmdList = m_GfxCmdList->GetD3D12GraphicsCommandListPtr();
+		std::unique_ptr<Resource> const& backBuffer = m_BackBuffers[m_CurrentBackBufferIndex];
 
-		backBuffer->TransitionAndBarrier(cmdList, D3D12_RESOURCE_STATE_RENDER_TARGET,
+		backBuffer->TransitionAndBarrier(gfxCmdList, D3D12_RESOURCE_STATE_RENDER_TARGET,
 			D3D12_RESOURCE_STATE_PRESENT);
 
-		THROW_IFF(cmdList->Close());
+		THROW_IFF(gfxCmdList->Close());
 
-		ID3D12CommandList* const commandLists[] = { cmdList };
+		ID3D12CommandList* const commandLists[] = { gfxCmdList };
 		m_DirectCmdQueue->GetD3D12CommandQueuePtr()->ExecuteCommandLists(1UL, commandLists);
 
 
@@ -83,41 +84,11 @@ namespace acc3d::Graphics
 		Synchronizer::WaitForFenceValue(m_Fence->GetD3D12FencePtr(),
 			m_FrameFenceValues[m_CurrentBackBufferIndex],
 			m_FenceEvent);
-
 #if defined(_DEBUG) || defined(DEBUG)
 		m_InfoQueue->FlushQueue();
 #endif
 	}
 
-	void Renderer::UpdateRenderTargetViews()
-	{
-		CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(
-			m_RTVDescriptorHeap->GetD3D12DescriptorHeapPtr()->GetCPUDescriptorHandleForHeapStart());
-
-		for (UINT i = 0; i < g_NUM_FRAMES_IN_FLIGHT; ++i)
-		{
-			ComPtr<ID3D12Resource> pBackBuffer;
-			THROW_IFF(m_SwapChain->GetDXGISwapChain()->GetBuffer(i, IID_PPV_ARGS(&pBackBuffer)));
-
-			m_Device->GetD3D12DevicePtr()->CreateRenderTargetView(pBackBuffer.Get(), nullptr, rtvHandle);
-			m_BackBuffers[i].reset();
-			m_BackBuffers[i] = std::make_unique<Resource>(pBackBuffer);
-			rtvHandle.Offset(static_cast<INT>(m_DescriptorHeapSizeInfo.RTVDescriptorSize));
-		}
-	
-	}
-
-	void Renderer::ClearRenderTargetView(D3D12_CPU_DESCRIPTOR_HANDLE rtv, FLOAT const* clearColor) const
-	{
-		m_GfxCmdList->GetD3D12GraphicsCommandListPtr()->ClearRenderTargetView(rtv, clearColor, 1UL,
-			&m_ScissorRect);
-	}
-
-	void Renderer::ClearDepthStencilView(D3D12_CPU_DESCRIPTOR_HANDLE dsv, D3D12_CLEAR_FLAGS flags, FLOAT depth) const
-	{
-		m_GfxCmdList->GetD3D12GraphicsCommandListPtr()->ClearDepthStencilView(
-			dsv, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 1UL, &m_ScissorRect);
-	}
 
 	void Renderer::RenderScene(ECS::Scene& scene)
 	{
@@ -146,11 +117,18 @@ namespace acc3d::Graphics
 			return;
 		}
 
-		const auto meshRenderView = scene.GetEnTTRegistryMutable().view<ECS::MeshRendererComponent, ECS::TransformComponent>();
-
 		ComPtr<ID3D12GraphicsCommandList2> const& gfxCmdList = m_GfxCmdList->GetD3D12GraphicsCommandList();
 
-		ID3D12DescriptorHeap* const heaps[] = { m_LightContext->GetDescriptorHeap(m_CurrentBackBufferIndex)->GetD3D12DescriptorHeapPtr() };
+		const CD3DX12_CPU_DESCRIPTOR_HANDLE rtv(
+			m_RTVDescriptorHeap->GetD3D12DescriptorHeapPtr()->GetCPUDescriptorHandleForHeapStart(),
+			m_CurrentBackBufferIndex,
+			m_DescriptorHeapSizeInfo.RTVDescriptorSize);
+
+		D3D12_CPU_DESCRIPTOR_HANDLE const depthStencilDescriptor = m_DSVDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+		gfxCmdList->OMSetRenderTargets(1, &rtv, FALSE, &depthStencilDescriptor);
+
+
+		ID3D12DescriptorHeap* const descriptorHeaps[] = { m_LightContext->GetDescriptorHeap(m_CurrentBackBufferIndex)->GetD3D12DescriptorHeapPtr() };
 
 		m_LightContext->SetLightEntriesDefault(m_CurrentBackBufferIndex);
 
@@ -163,33 +141,28 @@ namespace acc3d::Graphics
 			auto const entity = lightView[i];
 			auto entry = scene.GetComponent<ECS::DirectionalLightComponent>(entity);
 			m_LightContext->SetLightEntry(entry, m_CurrentBackBufferIndex, i);
+			
 		}
-
-		const CD3DX12_CPU_DESCRIPTOR_HANDLE rtv(
-			m_RTVDescriptorHeap->GetD3D12DescriptorHeapPtr()->GetCPUDescriptorHandleForHeapStart(),
-			m_CurrentBackBufferIndex,
-			m_DescriptorHeapSizeInfo.RTVDescriptorSize);
-
-		D3D12_CPU_DESCRIPTOR_HANDLE const depthStencilDescriptor = m_DSVDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
-		gfxCmdList->OMSetRenderTargets(1, &rtv, FALSE, &depthStencilDescriptor);
 
 		float const aspectRatio = m_Viewport.Width / m_Viewport.Height;
 
 		gfxCmdList->RSSetViewports(1, &m_Viewport);
 		gfxCmdList->RSSetScissorRects(1, &m_ScissorRect);
 
+
 		const auto lightGPUHandle = m_LightContext->GetDescriptorHeap(m_CurrentBackBufferIndex)->
 		                                            GetD3D12DescriptorHeapPtr()->GetGPUDescriptorHandleForHeapStart();
 
-
-		RootSignature const* pRootSignature = RootSignatureLibrary::Get(ACC3D_DIFFUSE_ROOT_SIGNATURE);
+		RootSignature const* pRootSignature = RootSignatureLibrary::Get(static_cast<RootSignatureId>(ROOT_SIG_ENTRY_VALUE::DIFFUSE_ROOT_SIGNATURE));
 		gfxCmdList->SetGraphicsRootSignature(pRootSignature->GetD3D12RootSignaturePtr());
+		
+		// Directional Light data
+		gfxCmdList->SetDescriptorHeaps(1UL, descriptorHeaps);
 
-		// We really should set up a material system soon and avoid setting the root signature for every object or per frame.
-		// There could be like 3-4 different fixed root signatures and depending on the entity to be drawed. For example
-		// if the entity has a MeshRendererComponent and wants to receive light information, (something like setting a variable
-		// mrc.ReceivesLight = true) it could use the a root signature that describes all the light information layout
-		// in the scene and of course some other information like primary camera position as well.
+		gfxCmdList->SetGraphicsRootDescriptorTable(0UL, lightGPUHandle);
+
+		const auto meshRenderView = scene.GetEnTTRegistryMutable().view<ECS::MeshRendererComponent, ECS::TransformComponent>();
+
 		for (const auto entity : meshRenderView)
 		{
 			// tc:TransformComponent, mrc:MeshRendererComponent
@@ -200,37 +173,176 @@ namespace acc3d::Graphics
 			gfxCmdList->IASetVertexBuffers(0UL, 1UL, &drawable->VertexBufferView);
 			gfxCmdList->IASetIndexBuffer(&drawable->IndexBufferView);
 
-			gfxCmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST) ;
+			gfxCmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 			
 			struct
 			{
-				XMMATRIX Mvp;
+				XMMATRIX ModelViewProjection;
 				XMMATRIX Model;
 			} MVP_MODEL;
 
-			MVP_MODEL.Mvp = XMMatrixMultiply(tc.GetTransformationMatrix(), cameraComponent->GetViewMatrix());
-			MVP_MODEL.Mvp = XMMatrixMultiply(MVP_MODEL.Mvp, cameraComponent->GetProjectionMatrix(aspectRatio));
+			MVP_MODEL.ModelViewProjection = XMMatrixMultiply(tc.GetTransformationMatrix(), cameraComponent->GetViewMatrix());
+			MVP_MODEL.ModelViewProjection = XMMatrixMultiply(MVP_MODEL.ModelViewProjection, cameraComponent->GetProjectionMatrix(aspectRatio));
 
 			MVP_MODEL.Model = tc.GetTransformationMatrix();
 
+			// drawable->Material->SetGraphicsRootParameters(void* MVP_MODEL, XMFLOAT4 cameraPosition);
 
 			// Model-View-Projection and Model matrices
 			gfxCmdList->SetGraphicsRoot32BitConstants(1UL, 2 * sizeof(XMMATRIX) / 4, &MVP_MODEL, 0);
-
-			// Directional Light data
-			gfxCmdList->SetDescriptorHeaps(1UL, &heaps[0]);
-			gfxCmdList->SetGraphicsRootDescriptorTable(0UL, lightGPUHandle);
-
-
+			
 			gfxCmdList->DrawIndexedInstanced(drawable->IndicesCount, 1, 0, 0, 0);
+			m_FrameDrawCallCount++;
 		}
 	}
 
-
-	Renderer::~Renderer()
+	void Renderer::InitializeImGui()
 	{
-		Synchronizer::Flush(m_DirectCmdQueue->GetD3D12CommandQueuePtr(), m_Fence->GetD3D12FencePtr(), m_FenceValue,
-		                    m_FenceEvent);
+		IMGUI_CHECKVERSION();
+		ImGui::CreateContext();
+		ImGuiIO const& io = ImGui::GetIO(); (void)io;
+
+		io.Fonts->AddFontFromFileTTF("Assets/Fonts/Bitter-Medium.ttf", 22);
+		constexpr auto ColorFromBytes = [](uint8_t r, uint8_t g, uint8_t b)
+		{
+			return ImVec4((float)r / 255.0f, (float)g / 255.0f, (float)b / 255.0f, 1.0f);
+		};
+
+		auto& style = ImGui::GetStyle();
+		ImVec4* colors = style.Colors;
+
+		const ImVec4 bgColor = ColorFromBytes(37, 37, 38);
+		const ImVec4 lightBgColor = ColorFromBytes(82, 82, 85);
+		const ImVec4 veryLightBgColor = ColorFromBytes(90, 90, 95);
+
+		const ImVec4 panelColor = ColorFromBytes(51, 51, 55);
+		const ImVec4 panelHoverColor = ColorFromBytes(29, 151, 236);
+		const ImVec4 panelActiveColor = ColorFromBytes(0, 119, 200);
+
+		const ImVec4 textColor = ColorFromBytes(255, 255, 255);
+		const ImVec4 textDisabledColor = ColorFromBytes(151, 151, 151);
+		const ImVec4 borderColor = ColorFromBytes(78, 78, 78);
+
+		colors[ImGuiCol_Text] = textColor;
+		colors[ImGuiCol_TextDisabled] = textDisabledColor;
+		colors[ImGuiCol_TextSelectedBg] = panelActiveColor;
+		colors[ImGuiCol_WindowBg] = bgColor;
+		colors[ImGuiCol_ChildBg] = bgColor;
+		colors[ImGuiCol_PopupBg] = bgColor;
+		colors[ImGuiCol_Border] = borderColor;
+		colors[ImGuiCol_BorderShadow] = borderColor;
+		colors[ImGuiCol_FrameBg] = panelColor;
+		colors[ImGuiCol_FrameBgHovered] = panelHoverColor;
+		colors[ImGuiCol_FrameBgActive] = panelActiveColor;
+		colors[ImGuiCol_TitleBg] = bgColor;
+		colors[ImGuiCol_TitleBgActive] = bgColor;
+		colors[ImGuiCol_TitleBgCollapsed] = bgColor;
+		colors[ImGuiCol_MenuBarBg] = panelColor;
+		colors[ImGuiCol_ScrollbarBg] = panelColor;
+		colors[ImGuiCol_ScrollbarGrab] = lightBgColor;
+		colors[ImGuiCol_ScrollbarGrabHovered] = veryLightBgColor;
+		colors[ImGuiCol_ScrollbarGrabActive] = veryLightBgColor;
+		colors[ImGuiCol_CheckMark] = panelActiveColor;
+		colors[ImGuiCol_SliderGrab] = panelHoverColor;
+		colors[ImGuiCol_SliderGrabActive] = panelActiveColor;
+		colors[ImGuiCol_Button] = panelColor;
+		colors[ImGuiCol_ButtonHovered] = panelHoverColor;
+		colors[ImGuiCol_ButtonActive] = panelHoverColor;
+		colors[ImGuiCol_Header] = panelColor;
+		colors[ImGuiCol_HeaderHovered] = panelHoverColor;
+		colors[ImGuiCol_HeaderActive] = panelActiveColor;
+		colors[ImGuiCol_Separator] = borderColor;
+		colors[ImGuiCol_SeparatorHovered] = borderColor;
+		colors[ImGuiCol_SeparatorActive] = borderColor;
+		colors[ImGuiCol_ResizeGrip] = bgColor;
+		colors[ImGuiCol_ResizeGripHovered] = panelColor;
+		colors[ImGuiCol_ResizeGripActive] = lightBgColor;
+		colors[ImGuiCol_PlotLines] = panelActiveColor;
+		colors[ImGuiCol_PlotLinesHovered] = panelHoverColor;
+		colors[ImGuiCol_PlotHistogram] = panelActiveColor;
+		colors[ImGuiCol_PlotHistogramHovered] = panelHoverColor;
+		colors[ImGuiCol_DragDropTarget] = bgColor;
+		colors[ImGuiCol_NavHighlight] = bgColor;
+		colors[ImGuiCol_Tab] = bgColor;
+		colors[ImGuiCol_TabActive] = panelActiveColor;
+		colors[ImGuiCol_TabUnfocused] = bgColor;
+		colors[ImGuiCol_TabUnfocusedActive] = panelActiveColor;
+		colors[ImGuiCol_TabHovered] = panelHoverColor;
+
+		style.WindowRounding = 0.0f;
+		style.ChildRounding = 0.0f;
+		style.FrameRounding = 0.0f;
+		style.GrabRounding = 0.0f;
+		style.PopupRounding = 0.0f;
+		style.ScrollbarRounding = 0.0f;
+		style.TabRounding = 0.0f;
+
+		this->CreateImGuiFontDescriptorHeap();
+
+		D3D12_CPU_DESCRIPTOR_HANDLE CPUDescriptorHandle = m_ImGuiFontDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+		D3D12_GPU_DESCRIPTOR_HANDLE GPUDescriptorHandle = m_ImGuiFontDescriptorHeap->GetGPUDescriptorHandleForHeapStart();
+
+		ImGui_ImplSDL2_InitForD3D(m_Window->GetSDLWindow());
+		ImGui_ImplDX12_Init(m_Device->GetD3D12DevicePtr(),
+			g_NUM_FRAMES_IN_FLIGHT,
+			DXGI_FORMAT_R8G8B8A8_UNORM,
+			m_ImGuiFontDescriptorHeap,
+			CPUDescriptorHandle,
+			GPUDescriptorHandle);
+	}
+
+	void Renderer::RenderImGui() const
+	{
+		ID3D12GraphicsCommandList2* gfxCmdList = m_GfxCmdList->GetD3D12GraphicsCommandListPtr();
+
+		ID3D12DescriptorHeap* const imguiDescriptorHeap[] = { m_ImGuiFontDescriptorHeap };
+		gfxCmdList->SetDescriptorHeaps(1UL, imguiDescriptorHeap);
+		ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), gfxCmdList);
+	}
+
+	size_t Renderer::GetFrameDrawCallCount() const
+	{
+		return m_FrameDrawCallCount;
+	}
+
+	void Renderer::CreateImGuiFontDescriptorHeap()
+	{
+		D3D12_DESCRIPTOR_HEAP_DESC desc = {};
+		desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+		desc.NumDescriptors = 1;
+		desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+
+		THROW_IFF(m_Device->GetD3D12Device2()->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&m_ImGuiFontDescriptorHeap)));
+	}
+
+
+	void Renderer::UpdateRenderTargetViews()
+	{
+		CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(
+			m_RTVDescriptorHeap->GetD3D12DescriptorHeapPtr()->GetCPUDescriptorHandleForHeapStart());
+
+		for (UINT i = 0; i < g_NUM_FRAMES_IN_FLIGHT; ++i)
+		{
+			ComPtr<ID3D12Resource> pBackBuffer;
+			THROW_IFF(m_SwapChain->GetDXGISwapChain()->GetBuffer(i, IID_PPV_ARGS(&pBackBuffer)));
+
+			m_Device->GetD3D12DevicePtr()->CreateRenderTargetView(pBackBuffer.Get(), nullptr, rtvHandle);
+			m_BackBuffers[i] = std::make_unique<Resource>(pBackBuffer);
+			rtvHandle.Offset(static_cast<INT>(m_DescriptorHeapSizeInfo.RTVDescriptorSize));
+		}
+
+	}
+
+	void Renderer::ClearRenderTargetView(D3D12_CPU_DESCRIPTOR_HANDLE rtv, FLOAT const* clearColor) const
+	{
+		m_GfxCmdList->GetD3D12GraphicsCommandListPtr()->ClearRenderTargetView(rtv, clearColor, 1UL,
+			&m_ScissorRect);
+	}
+
+	void Renderer::ClearDepthStencilView(D3D12_CPU_DESCRIPTOR_HANDLE dsv, D3D12_CLEAR_FLAGS flags, FLOAT depth) const
+	{
+		m_GfxCmdList->GetD3D12GraphicsCommandListPtr()->ClearDepthStencilView(
+			dsv, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 1UL, &m_ScissorRect);
 	}
 
 	void Renderer::Resize(uint32_t width,uint32_t height)
@@ -241,9 +353,8 @@ namespace acc3d::Graphics
 			m_BackBuffers[i]->GetResource().Reset();
 			m_FrameFenceValues[i] = m_FrameFenceValues[m_CurrentBackBufferIndex];
 		}
-
+		m_DepthBuffer->Release();
 		DXGI_SWAP_CHAIN_DESC swapChainDesc{};
-
 		THROW_IFF(m_SwapChain->GetDXGISwapChain()->GetDesc(&swapChainDesc));
 		THROW_IFF(m_SwapChain->GetDXGISwapChain()->ResizeBuffers(g_NUM_FRAMES_IN_FLIGHT, width, height,
 			swapChainDesc.BufferDesc.Format,
@@ -269,16 +380,24 @@ namespace acc3d::Graphics
 		auto const depthBufferResourceDescription = CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_D32_FLOAT, 1600, 900, 1, 0, 1, 0,
 		                                                          D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
 
-		m_DepthBuffer.reset();
-		m_DepthBuffer = std::make_unique<Resource>(m_Device->GetD3D12DevicePtr(), &depthBufferHeapProperties,
-		                                           D3D12_HEAP_FLAG_NONE, &depthBufferResourceDescription,
-		                                           D3D12_RESOURCE_STATE_DEPTH_WRITE, &optimizedClearValue);
+		D3D12MA::ALLOCATION_DESC allocationDesc;
+		allocationDesc.CustomPool = nullptr;
+		allocationDesc.ExtraHeapFlags = D3D12_HEAP_FLAG_NONE;
+		allocationDesc.Flags = D3D12MA::ALLOCATION_FLAG_COMMITTED;
+		allocationDesc.HeapType = D3D12_HEAP_TYPE_DEFAULT;
+
+		m_Allocator->CreateResource(&allocationDesc,
+			&depthBufferResourceDescription,
+			D3D12_RESOURCE_STATE_DEPTH_WRITE,
+			&optimizedClearValue,
+			&m_DepthBuffer, IID_NULL, NULL);
+
 		D3D12_DEPTH_STENCIL_VIEW_DESC DSVDescription = {};
 		DSVDescription.Format = DXGI_FORMAT_D32_FLOAT;
 		DSVDescription.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
 		DSVDescription.Texture2D.MipSlice = 0;
 		DSVDescription.Flags = D3D12_DSV_FLAG_NONE;
-		m_Device->GetD3D12Device2()->CreateDepthStencilView(m_DepthBuffer->GetResourcePtr(), &DSVDescription,
+		m_Device->GetD3D12Device2()->CreateDepthStencilView(m_DepthBuffer->GetResource(), &DSVDescription,
 		                                                    m_DSVDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 
 	}
@@ -288,7 +407,14 @@ namespace acc3d::Graphics
 		return m_Device;
 	}
 
-	
+	D3D12MA::Stats Renderer::GetAllocatorStats() const
+	{
+		D3D12MA::Stats stats;
+		m_Allocator->CalculateStats(&stats);
+		return stats;
+	}
+
+
 	RendererId Renderer::GenerateRendererId()
 	{
 		if (m_RendererIdValue == std::numeric_limits<uint64_t>::max())
@@ -298,116 +424,41 @@ namespace acc3d::Graphics
 
 	void Renderer::RegisterMeshRendererComponentDrawable(Asset::MeshAssetId meshAssetId,RendererId& assignedRendererId, RootSignatureInitializer const& rootSigInit)
 	{
-		ComPtr<ID3D12Device2> const& device = m_Device->GetD3D12Device2();
+		Drawable* drawable = DrawableFactory::CreateDrawable(m_Device->GetD3D12Device2().Get(),
+			m_Allocator,
+			m_CopyCmdQueue->GetD3D12CommandQueuePtr(),
+			m_CopyFence->GetD3D12FencePtr(),
+			m_CopyFenceValue,
+			m_CopyFenceEvent,
+			meshAssetId,
+			rootSigInit);
 
-		const std::unique_ptr<CommandAllocator> m_LoadCmdAllocator = std::make_unique<CommandAllocator>(device.Get(),
-		                                                                                                D3D12_COMMAND_LIST_TYPE_COPY);
-		const std::unique_ptr<CommandList> m_LoadCmdList = std::make_unique<CommandList>(
-			device.Get(), m_LoadCmdAllocator->GetD3D12CommandAllocatorPtr(),
-			D3D12_COMMAND_LIST_TYPE_COPY, nullptr);
-
-		// Reset the command list and set an open state as we will be recording copy commands for the drawable object.
-		m_LoadCmdList->Reset(m_LoadCmdAllocator->GetD3D12CommandAllocatorPtr(), nullptr);
-
-		const auto& cmdList = m_LoadCmdList->GetD3D12GraphicsCommandList();
-
-		Drawable* const drawable = new Drawable();
-
-		// We do this because later in the Renderer::RenderScene() function we'll use the assigned renderer id to
-		// get corresponding drawable associated with the MeshRendererComponent.
-		assignedRendererId = (drawable->RendererId = this->GenerateRendererId());
-
-		drawable->AssetId = meshAssetId;
-		drawable->RootSignatureId = rootSigInit.RootSignatureId;
-
-		auto& [Vertices, Indices] = Asset::MeshLibrary::Retrieve(meshAssetId);
-
-		assert(Vertices.size() > 0 && Indices.size() > 0);
-
-		drawable->VertexBuffer = std::make_unique<Resource>(device.Get());
-		drawable->IndexBuffer = std::make_unique<Resource>(device.Get());
-		drawable->IndicesCount = Indices.size();
-
-		const std::unique_ptr vertexBufferIntermediateResource = std::make_unique<Resource>(device.Get());
-		Resource::UpdateBufferResource(device.Get(), cmdList.Get(), *drawable->VertexBuffer, *vertexBufferIntermediateResource,
-			Vertices.size(), sizeof(Vertex), Vertices.data());
-
-		const std::unique_ptr indexBufferIntermediateResource = std::make_unique<Resource>(device.Get());
-		Resource::UpdateBufferResource(device.Get(), cmdList.Get(), *drawable->IndexBuffer, *indexBufferIntermediateResource,
-			Indices.size(), sizeof(uint32_t), Indices.data());
-		
-		drawable->VertexBufferView.BufferLocation = drawable->VertexBuffer->GetGPUVirtualAddress();
-		drawable->VertexBufferView.SizeInBytes = Vertices.size() * sizeof(Vertex);
-		drawable->VertexBufferView.StrideInBytes = sizeof(Vertex);
-
-		drawable->IndexBufferView.BufferLocation = drawable->IndexBuffer->GetGPUVirtualAddress();
-		drawable->IndexBufferView.SizeInBytes = Indices.size() * sizeof(uint32_t);
-		drawable->IndexBufferView.Format = DXGI_FORMAT_R32_UINT;
-
-
-		ShaderCompilationParameters const vertexShaderCompilationParams =
-			ShaderCompilationParameters::Param_CompileVS_StdIncNoFlagsMainEntry(
-				L"Shaders\\diffuse.vsh", 
-				SHADER_ID_ENTRY_VALUE::ACC3D_DIFFUSE_VERTEX_SHADER);
-
-		ShaderCompilationParameters const pixelShaderCompilationParams =
-			ShaderCompilationParameters::Param_CompilePS_StdIncNoFlagsMainEntry(
-				L"Shaders\\diffuse.psh", 
-				SHADER_ID_ENTRY_VALUE::ACC3D_DIFFUSE_PIXEL_SHADER);
-
-		auto [VertexShaderId, VertexShaderEntry] = ShaderLibrary::CompileAndLoad(vertexShaderCompilationParams);
-		auto [PixelShaderId, PixelShaderEntry] = ShaderLibrary::CompileAndLoad(pixelShaderCompilationParams);
-
-		 
-		RootSignature const* pRootSignature = RootSignatureLibrary::CreateRootSignatureEntry(device.Get(), rootSigInit);
-
-		struct PipelineStateStream
-		{
-			CD3DX12_PIPELINE_STATE_STREAM_ROOT_SIGNATURE pRootSignature;
-			CD3DX12_PIPELINE_STATE_STREAM_INPUT_LAYOUT InputLayout;
-			CD3DX12_PIPELINE_STATE_STREAM_PRIMITIVE_TOPOLOGY PrimitiveTopologyType;
-			CD3DX12_PIPELINE_STATE_STREAM_VS VS;
-			CD3DX12_PIPELINE_STATE_STREAM_PS PS;
-			CD3DX12_PIPELINE_STATE_STREAM_RENDER_TARGET_FORMATS RTVFormats;
-			CD3DX12_PIPELINE_STATE_STREAM_DEPTH_STENCIL_FORMAT DSVFormat;
-		} pipelineStateStream;
-
-		D3D12_RT_FORMAT_ARRAY rtvFormats = {};
-		rtvFormats.NumRenderTargets = 1;
-		rtvFormats.RTFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
-
-		VertexLayout layout(VertexShaderId);
-
-		auto inputLayout = layout.GetD3D12InputLayout();
-		pipelineStateStream.pRootSignature = pRootSignature->GetD3D12RootSignaturePtr();
-		pipelineStateStream.InputLayout = { inputLayout.data(), static_cast<UINT>(inputLayout.size()) };
-		pipelineStateStream.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-		pipelineStateStream.VS = CD3DX12_SHADER_BYTECODE(VertexShaderEntry.Blob.Get());
-		pipelineStateStream.PS = CD3DX12_SHADER_BYTECODE(PixelShaderEntry.Blob.Get());
-		pipelineStateStream.RTVFormats = rtvFormats;
-		pipelineStateStream.DSVFormat = DXGI_FORMAT_D32_FLOAT;
-
-		D3D12_PIPELINE_STATE_STREAM_DESC pipelineStateStreamDesc = { sizeof(PipelineStateStream), &pipelineStateStream };
-
-		drawable->PipelineState = std::make_unique<PipelineState>(device.Get(), &pipelineStateStreamDesc);
-
-		m_LoadCmdList->GetD3D12GraphicsCommandListPtr()->Close();
-		ID3D12CommandList* const commandLists[] = { m_LoadCmdList->GetD3D12GraphicsCommandListPtr() };
-
-		
-
-		m_CopyCmdQueue->GetD3D12CommandQueuePtr()->ExecuteCommandLists(1UL, commandLists);
-		Synchronizer::IncrementAndSignal(m_CopyCmdQueue->GetD3D12CommandQueuePtr(), m_CopyFence->GetD3D12FencePtr(),
-		                                 m_CopyFenceValue);
-		Synchronizer::WaitForFenceValue(m_CopyFence->GetD3D12FencePtr(), m_CopyFenceValue, m_CopyFenceEvent);
-
+		drawable->RendererId = (assignedRendererId = this->GenerateRendererId());
 		m_DrawableMap[drawable->RendererId] = drawable;
-
 	}
+
 
 	void Renderer::DeregisterMeshRendererComponentDrawable(RendererId id)
 	{
+		Synchronizer::Flush(m_DirectCmdQueue->GetD3D12CommandQueuePtr(), m_Fence->GetD3D12FencePtr(), m_FenceValue,
+			m_FenceEvent);
+		Drawable const* drawable = m_DrawableMap[id];
+		drawable->VertexBuffer->Release();
+		drawable->IndexBuffer->Release();
 		delete m_DrawableMap[id];
+	}
+
+	void Renderer::Shutdown()
+	{
+		Synchronizer::Flush(m_DirectCmdQueue->GetD3D12CommandQueuePtr(), m_Fence->GetD3D12FencePtr(), m_FenceValue,
+			m_FenceEvent);
+		m_LightContext->Release();
+		m_DepthBuffer->Release();
+		m_Allocator->Release();
+
+		ImGui_ImplDX12_Shutdown();
+		ImGui_ImplSDL2_Shutdown();
+		ImGui::DestroyContext();
 	}
 
 	void Renderer::InitDrawableDenseHashMap()

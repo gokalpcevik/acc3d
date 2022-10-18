@@ -1,9 +1,8 @@
 #pragma once
-#include <d3d12.h>
-#include <d3dx12.h>
-#include "Resource.h"
-#include "PipelineState.h"
-#include "RootSignature.h"
+#include <D3D12MemAlloc.h>
+#include "Material.h"
+#include "Wrappers/PipelineState.h"
+#include "Material.h"
 #include "Type.h"
 #include "../AssetCore/MeshLibrary.h"
 
@@ -25,15 +24,18 @@ namespace acc3d::Graphics
         RootSignatureId RootSignatureId = ROOT_SIGNATURE_ID_EMPTY_KEY_VALUE;
 
 
-        std::unique_ptr<Resource> VertexBuffer;
-        std::unique_ptr<Resource> IndexBuffer;
+    	D3D12MA::Allocation* VertexBuffer = nullptr;
+        D3D12MA::Allocation* IndexBuffer = nullptr;
+
         D3D12_VERTEX_BUFFER_VIEW VertexBufferView;
         D3D12_INDEX_BUFFER_VIEW IndexBufferView;
         size_t IndicesCount = 0;
 
+        Material* Material = nullptr;
 
         std::unique_ptr<PipelineState> PipelineState;
-        /*
+
+    	/*
          * Pipeline state object is used to describe how the graphics/compute pipeline will behave
          * in every pipeline stage when we are going to render something.
          *

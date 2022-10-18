@@ -30,7 +30,7 @@ namespace acc3d::Graphics
 
 		YAML::Node const rootSigFlagsNode = rootSigNode["root_signature_flags"];
 
-		if(!rootSigFlagsNode)
+        if(!rootSigFlagsNode)
 		{
 			acc3d_error("No 'root_signature_flags' node has been found.");
 			return;
@@ -209,10 +209,10 @@ namespace acc3d::Graphics
 			return std::nullopt;
 		}
 
-		acc3d_debug(
-			"root_parameter_name={}\ntype=32bit_constants\nvisibility={}\nnum_32_bit_val={}\nshader_register={}\nregister_space={}\n",
-			parameterName, visibilityStr, *num32BitVal, shaderRegister,
-			registerSpace);
+		//acc3d_debug(
+		//	"root_parameter_name={}\ntype=32bit_constants\nvisibility={}\nnum_32_bit_val={}\nshader_register={}\nregister_space={}\n",
+		//	parameterName, visibilityStr, *num32BitVal, shaderRegister,
+		//	registerSpace);
 		CD3DX12_ROOT_PARAMETER1 param1{};
 		param1.InitAsConstants(*num32BitVal, shaderRegister, registerSpace, visibility);
 		return param1;
@@ -253,10 +253,10 @@ namespace acc3d::Graphics
 				parameterName);
 			return std::nullopt;
 		}
-		acc3d_debug(
-			"root_parameter_name={}\ntype={}\nvisibility={}\nroot_descriptor_flags={}\nshader_register={}\nregister_space={}\n",
-			parameterName, typeStr, visibilityStr, *rootDescriptorFlagStr, shaderRegister,
-			registerSpace);
+		//acc3d_debug(
+		//	"root_parameter_name={}\ntype={}\nvisibility={}\nroot_descriptor_flags={}\nshader_register={}\nregister_space={}\n",
+		//	parameterName, typeStr, visibilityStr, *rootDescriptorFlagStr, shaderRegister,
+		//	registerSpace);
 		CD3DX12_ROOT_PARAMETER1 param1{};
 
 		// SWITCH
@@ -335,11 +335,10 @@ namespace acc3d::Graphics
 			range.Init(*descriptorRangeType, (UINT)*numDescriptors, (UINT)*baseShaderRegister, (UINT)*registerSpace,
 			           *descriptorRangeFlags, D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND);
 
-
-			acc3d_debug(
-				"root_parameter_name={7}\nrange_name={0}\nindex={1}\nnum_descriptors={2}\nbase_shader_register={3}\nregister_space={4}\ndescriptor_range_type={5}\ndescriptor_range_flags={6}\n"
-				, *rangeName, i, *numDescriptors, *baseShaderRegister, *registerSpace, *descriptorRangeTypeStr,
-				*descriptorRangeFlagsStr, parameterName);
+			//acc3d_debug(
+			//	"root_parameter_name={7}\nrange_name={0}\nindex={1}\nnum_descriptors={2}\nbase_shader_register={3}\nregister_space={4}\ndescriptor_range_type={5}\ndescriptor_range_flags={6}\n"
+			//	, *rangeName, i, *numDescriptors, *baseShaderRegister, *registerSpace, *descriptorRangeTypeStr,
+			//	*descriptorRangeFlagsStr, parameterName);
 
 
 			m_DescriptorRanges[index].push_back(range);

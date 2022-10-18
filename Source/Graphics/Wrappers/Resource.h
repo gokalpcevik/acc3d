@@ -2,7 +2,7 @@
 #include <d3d12.h>
 #include <d3dx12.h>
 #include <wrl.h>
-#include "ResultHandler.h"
+#include "../ResultHandler.h"
 
 namespace acc3d::Graphics
 {
@@ -23,7 +23,7 @@ namespace acc3d::Graphics
 
 		[[nodiscard]] D3D12_GPU_VIRTUAL_ADDRESS GetGPUVirtualAddress() const;
 
-		void UpdateBufferResource(ID3D12GraphicsCommandList2* pCmdList, size_t NumElems, size_t ElemSize,
+		void CreateAndUpdateBufferResource(ID3D12GraphicsCommandList2* pCmdList, size_t NumElems, size_t ElemSize,
 		                          void const* pBufferData,
 		                          D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE);
 
@@ -31,12 +31,17 @@ namespace acc3d::Graphics
 		void TransitionAndBarrier(ID3D12GraphicsCommandList2* pGfxCmdList, D3D12_RESOURCE_STATES stateBefore,
 		                          D3D12_RESOURCE_STATES stateAfter) const;
 
-		static void UpdateBufferResource(ID3D12Device* pDevice, ID3D12GraphicsCommandList2* pCmdList,
+		static void TransitionAndBarrier(ID3D12GraphicsCommandList2* pGfxCmdList, 
+			ID3D12Resource* pResource, 
+			D3D12_RESOURCE_STATES stateBefore,
+			D3D12_RESOURCE_STATES stateAfter);
+
+		static void CreateAndUpdateBufferResource(ID3D12Device* pDevice, ID3D12GraphicsCommandList2* pCmdList,
 		                                 ID3D12Resource** pDestinationResource,
 		                                 ID3D12Resource** pIntermediateResource, size_t NumElems, size_t ElemSize, void const* bufferData,
 		                                 D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE);
 
-		static void UpdateBufferResource(ID3D12Device* pDevice, ID3D12GraphicsCommandList2* pCmdList,
+		static void CreateAndUpdateBufferResource(ID3D12Device* pDevice, ID3D12GraphicsCommandList2* pCmdList,
 		                                Resource& DestinationResource, Resource& IntermediateResource, size_t NumElems,
 		                                size_t ElemSize, void const* bufferData,
 		                                D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE);

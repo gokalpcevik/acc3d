@@ -2,33 +2,37 @@
 #define NOMINMAX
 
 #include <memory>
-#include <chrono>
-#include <fmt/format.h>
 #include <d3d12.h>
-#include <fmt/xchar.h>
-#include <d3dcompiler.h>
+#include <D3D12MemAlloc.h>
 #include <d3dx12.h>
 #include <DirectXMath.h>
 #include <sparsehash/dense_hash_map>
 
-#include "Device.h"
-#include "Fence.h"
-#include "SwapChain.h"
-#include "CommandQueue.h"
-#include "CommandList.h"
-#include "CommandAllocator.h"
-#include "DescriptorHeap.h"
+#include <imgui.h>
+#include <imgui_impl_dx12.h>
+#include <imgui_impl_sdl.h>
+
+#include "Wrappers/Device.h"
+#include "Wrappers/Fence.h"
+#include "Wrappers/SwapChain.h"
+#include "Wrappers/CommandQueue.h"
+#include "Wrappers/CommandList.h"
+#include "Wrappers/CommandAllocator.h"
+#include "Wrappers/DescriptorHeap.h"
+#include "Wrappers/RootSignature.h"
+#include "Wrappers/PipelineState.h"
+#include "Wrappers/Resource.h"
+#include "Wrappers/InfoQueue.h"
+
 #include "Synchronizer.h"
-#include "RootSignature.h"
-#include "PipelineState.h"
 #include "ShaderLibrary.h"
 #include "RootSignatureLibrary.h"
-#include "Resource.h"
-#include "InfoQueue.h"
 #include "Type.h"
 #include "Drawable.h"
+#include "DrawableFactory.h"
 #include "LightContext.h"
 #include "ShaderReflection.h"
+
 #include "../AssetCore/MeshLibrary.h"
 #include "../Core/Window.h"
 #include "../ECS/Scene.h"
@@ -37,7 +41,7 @@
 
 namespace acc3d::Graphics
 {
-    struct RendererPresentMethod
+    struct PresentMethod
     {
         bool EnableVSync = true;
     };
@@ -47,7 +51,7 @@ namespace acc3d::Graphics
     public:
         Renderer() = default;
 
-        virtual ~Renderer();
+        virtual ~Renderer() = default;
 
         void Clear(FLOAT const *clearColor) const;
 
@@ -65,7 +69,17 @@ namespace acc3d::Graphics
 
         void RenderScene(ECS::Scene& scene);
 
+        void InitializeImGui();
+
+        void RenderImGui() const;
+
+        [[nodiscard]] size_t GetFrameDrawCallCount() const;
+
         [[nodiscard]] std::unique_ptr<Device> const &GetDevice() const;
+
+        [[nodiscard]] D3D12MA::Stats GetAllocatorStats() const;
+
+        [[nodiscard]] uint64_t GetFrameNumber() const { return m_FenceValue; }
 
     	[[nodiscard]] RendererId GenerateRendererId();
 
@@ -75,7 +89,12 @@ namespace acc3d::Graphics
             RootSignatureInitializer const& rootSigInit);
 
     	void DeregisterMeshRendererComponentDrawable(RendererId id);
+
+        void Shutdown();
+
     private:
+
+        void CreateImGuiFontDescriptorHeap();
 
         void InitDrawableDenseHashMap();
 
@@ -89,7 +108,7 @@ namespace acc3d::Graphics
         std::unique_ptr<CommandQueue> m_CopyCmdQueue;
         std::unique_ptr<CommandList> m_GfxCmdList;
         std::unique_ptr<Resource> m_BackBuffers[g_NUM_FRAMES_IN_FLIGHT];
-        std::unique_ptr<Resource> m_DepthBuffer;
+        D3D12MA::Allocation* m_DepthBuffer;
         std::unique_ptr<CommandAllocator> m_GfxCmdAllocators[g_NUM_FRAMES_IN_FLIGHT];
         std::unique_ptr<DescriptorHeap> m_RTVDescriptorHeap;
         std::unique_ptr<DescriptorHeap> m_DSVDescriptorHeap;
@@ -98,13 +117,13 @@ namespace acc3d::Graphics
 
         D3D12_VIEWPORT m_Viewport{CD3DX12_VIEWPORT(0.0f,0.0f,1600,900)};
         D3D12_RECT m_ScissorRect{CD3DX12_RECT{0,0,LONG_MAX,LONG_MAX}};
-/*-----------------------------------------------------------------*/
+/*#################################################################*/
 
 /*------------------------------DEBUG------------------------------*/
 #if defined(_DEBUG) || defined(DEBUG)
         std::unique_ptr<InfoQueue> m_InfoQueue;
 #endif
-/*-----------------------------------------------------------------*/
+/*#################################################################*/
 
 
 /* --------------------SYNCHRONIZATION-----------------------------*/
@@ -116,17 +135,31 @@ namespace acc3d::Graphics
         std::unique_ptr<Fence> m_CopyFence;
         uint64_t m_CopyFenceValue = 0;
         HANDLE m_CopyFenceEvent = INVALID_HANDLE_VALUE;
-/*-----------------------------------------------------------------*/
+/*#################################################################*/
 
-        RendererPresentMethod m_PresentMethod{true};
+        PresentMethod m_PresentMethod{true};
 
         google::dense_hash_map<RendererId, Drawable*> m_DrawableMap;
         // This should be atomically increased as we generate a renderer id, that is when we switch to a
         // multi-threaded renderer architecture
     	RendererId m_RendererIdValue = 2;
+
+        size_t mutable m_FrameDrawCallCount = 0;
 /*-----------------------------------------------------------------*/
 
         std::unique_ptr<LightContext> m_LightContext;
+
+
+/*---------------------MEMORY MANAGEMENT---------------------------*/
+        D3D12MA::Allocator* m_Allocator = nullptr;
+
+/*#################################################################*/
+
+/*-------------------------Dear ImGui------------------------------*/
+
+        ID3D12DescriptorHeap* m_ImGuiFontDescriptorHeap = nullptr;
+
+/*#################################################################*/
 
         friend class RendererFactory;
     };

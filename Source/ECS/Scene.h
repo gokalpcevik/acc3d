@@ -52,8 +52,10 @@ namespace acc3d::ECS
         template<typename T>
         auto DestroyAllComponentsOfType() -> void;
 
+        void Shutdown();
+
     private:
-    	void OnConstructMeshRendererComponent(entt::registry& registry, entt::entity entity) const;
+    	void OnConstructMeshRendererComponent(entt::registry& registry, entt::entity entity);
     	void OnDestroyMeshRendererComponent(entt::registry& registry, entt::entity entity) const;
 
         void OnConstructDirectionalLightComponent(entt::registry& registry, entt::entity entity);

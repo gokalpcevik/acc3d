@@ -13,6 +13,8 @@ find_package(directxtex CONFIG REQUIRED)
 find_package(directxmath CONFIG REQUIRED)
 find_package(sparsehash CONFIG REQUIRED)
 find_package(yaml-cpp CONFIG REQUIRED)
+find_package(d3d12-memory-allocator CONFIG REQUIRED)
+find_package(imgui CONFIG REQUIRED)
 
 add_executable(${PROJECT_NAME} "Source/Main.cpp")
 
@@ -42,6 +44,8 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     Microsoft::DirectXMath
     sparsehash::sparsehash
     yaml-cpp
+    unofficial::d3d12-memory-allocator
+    imgui::imgui
     )
 
 find_path(D3DX12_INCLUDE_DIRS "d3dx12.h")

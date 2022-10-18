@@ -35,7 +35,7 @@ namespace acc3d::Graphics
 	{
 		CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC desc{};
 		auto const& rootParameters = fileDeserializer.GetDeserializedRootParameters();
-		desc.Init_1_1(rootParameters.size(), rootParameters.data(), 0,nullptr,fileDeserializer.GetDeserializedRootSignatureFlags());
+		desc.Init_1_1(rootParameters.size(), rootParameters.data(), 0 ,nullptr,fileDeserializer.GetDeserializedRootSignatureFlags());
 
 		return RootSignature::SerializeVersionedRootSignatureWithHighestVersion(pDevice, desc);
 	}

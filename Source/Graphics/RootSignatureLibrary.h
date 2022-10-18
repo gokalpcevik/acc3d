@@ -2,7 +2,7 @@
 #include <filesystem>
 #include <sparsehash/dense_hash_map>
 #include "Material/RootSignatureFileDeserializer.h"
-#include "RootSignature.h"
+#include "Wrappers/RootSignature.h"
 #include "Type.h"
 
 namespace acc3d::Graphics

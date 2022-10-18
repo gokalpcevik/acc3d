@@ -38,7 +38,6 @@ namespace acc3d::Graphics
 		}
 
 		acc3d_info("Shader compilation succeeded.");
-
 		entry.ShaderType = param.ShaderType;
 		entry.CompilationSucceeded = true;
 		return entry;

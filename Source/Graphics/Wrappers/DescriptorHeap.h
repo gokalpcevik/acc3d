@@ -2,8 +2,8 @@
 
 #include <d3d12.h>
 #include <wrl/client.h>
-#include "ResultHandler.h"
-#include "RendererConfiguration.h"
+#include "../ResultHandler.h"
+#include "../RendererConfiguration.h"
 
 namespace acc3d::Graphics
 {
