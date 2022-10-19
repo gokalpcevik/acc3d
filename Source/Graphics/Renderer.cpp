@@ -128,6 +128,11 @@ namespace acc3d::Graphics
 		gfxCmdList->OMSetRenderTargets(1, &rtv, FALSE, &depthStencilDescriptor);
 
 
+		// Future implementation should just look like this but; even better would be just calling this at the scene creation.
+		// ID3D12DescriptorHeap* const descriptorHeapsImp[] = { m_MainDescriptorHeap->GetD3D12DescriptorHeapPtr(),m_SamplerDescriptorHeap->GetD3D12DescriptorHeapPtr() };
+		// gfxCmdList->SetDescriptorHeaps(2U, descriptorHeapsImp);
+
+
 		ID3D12DescriptorHeap* const descriptorHeaps[] = { m_LightContext->GetDescriptorHeap(m_CurrentBackBufferIndex)->GetD3D12DescriptorHeapPtr() };
 
 		m_LightContext->SetLightEntriesDefault(m_CurrentBackBufferIndex);
@@ -143,6 +148,7 @@ namespace acc3d::Graphics
 			m_LightContext->SetLightEntry(entry, m_CurrentBackBufferIndex, i);
 			
 		}
+
 
 		float const aspectRatio = m_Viewport.Width / m_Viewport.Height;
 
@@ -167,8 +173,7 @@ namespace acc3d::Graphics
 		{
 			// tc:TransformComponent, mrc:MeshRendererComponent
 			auto [mrc,tc] = meshRenderView.get(entity);
-			Drawable const* drawable = m_DrawableMap[ECS::RIDAccessor()(mrc)];
-
+			Drawable const* drawable = mrc.Drawable;
 			gfxCmdList->SetPipelineState(drawable->PipelineState->GetD3D12PipelineState().Get());
 			gfxCmdList->IASetVertexBuffers(0UL, 1UL, &drawable->VertexBufferView);
 			gfxCmdList->IASetIndexBuffer(&drawable->IndexBufferView);
@@ -312,6 +317,8 @@ namespace acc3d::Graphics
 		desc.NumDescriptors = 1;
 		desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 
+		//m_ImGuiFontAtlasDescriptorAllocation = m_CBV_UAV_SRVDescriptorAllocator->Allocate(1);
+
 		THROW_IFF(m_Device->GetD3D12Device2()->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&m_ImGuiFontDescriptorHeap)));
 	}
 
@@ -414,15 +421,7 @@ namespace acc3d::Graphics
 		return stats;
 	}
 
-
-	RendererId Renderer::GenerateRendererId()
-	{
-		if (m_RendererIdValue == std::numeric_limits<uint64_t>::max())
-			m_RendererIdValue = 2;
-		return m_RendererIdValue++;
-	}
-
-	void Renderer::RegisterMeshRendererComponentDrawable(Asset::MeshAssetId meshAssetId,RendererId& assignedRendererId, RootSignatureInitializer const& rootSigInit)
+	void Renderer::RegisterMeshRendererComponentDrawable(ECS::MeshRendererComponent & mrc)
 	{
 		Drawable* drawable = DrawableFactory::CreateDrawable(m_Device->GetD3D12Device2().Get(),
 			m_Allocator,
@@ -430,22 +429,19 @@ namespace acc3d::Graphics
 			m_CopyFence->GetD3D12FencePtr(),
 			m_CopyFenceValue,
 			m_CopyFenceEvent,
-			meshAssetId,
-			rootSigInit);
-
-		drawable->RendererId = (assignedRendererId = this->GenerateRendererId());
-		m_DrawableMap[drawable->RendererId] = drawable;
+			mrc.MeshAssetId,
+			mrc.RootSignatureDescription);
+		mrc.Drawable = drawable;
 	}
 
 
-	void Renderer::DeregisterMeshRendererComponentDrawable(RendererId id)
+	void Renderer::DeregisterMeshRendererComponentDrawable(ECS::MeshRendererComponent & mrc)
 	{
 		Synchronizer::Flush(m_DirectCmdQueue->GetD3D12CommandQueuePtr(), m_Fence->GetD3D12FencePtr(), m_FenceValue,
 			m_FenceEvent);
-		Drawable const* drawable = m_DrawableMap[id];
-		drawable->VertexBuffer->Release();
-		drawable->IndexBuffer->Release();
-		delete m_DrawableMap[id];
+		mrc.Drawable->VertexBuffer->Release();
+		mrc.Drawable->IndexBuffer->Release();
+		delete mrc.Drawable;
 	}
 
 	void Renderer::Shutdown()
@@ -459,11 +455,5 @@ namespace acc3d::Graphics
 		ImGui_ImplDX12_Shutdown();
 		ImGui_ImplSDL2_Shutdown();
 		ImGui::DestroyContext();
-	}
-
-	void Renderer::InitDrawableDenseHashMap()
-	{
-		m_DrawableMap.set_empty_key(RENDERER_ID_EMPTY_KEY_VALUE);
-		m_DrawableMap.set_deleted_key(RENDERER_ID_DELETED_KEY_VALUE);
 	}
 }

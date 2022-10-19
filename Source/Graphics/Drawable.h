@@ -11,7 +11,6 @@ namespace acc3d::Graphics
     struct Drawable
     {
         Asset::MeshAssetId AssetId;
-        RendererId RendererId = RENDERER_ID_EMPTY_KEY_VALUE;
 
     	/*
 		*  •The root signature is the object that represents the link between the command list and the resources/constants

@@ -24,6 +24,7 @@
 #include "Wrappers/Resource.h"
 #include "Wrappers/InfoQueue.h"
 
+#include "Memory/DescriptorAllocator.h"
 #include "Synchronizer.h"
 #include "ShaderLibrary.h"
 #include "RootSignatureLibrary.h"
@@ -81,22 +82,15 @@ namespace acc3d::Graphics
 
         [[nodiscard]] uint64_t GetFrameNumber() const { return m_FenceValue; }
 
-    	[[nodiscard]] RendererId GenerateRendererId();
+        void RegisterMeshRendererComponentDrawable(ECS::MeshRendererComponent & mrc);
 
-        void RegisterMeshRendererComponentDrawable(
-            Asset::MeshAssetId meshAssetId, 
-            RendererId& assignedRendererId,
-            RootSignatureInitializer const& rootSigInit);
-
-    	void DeregisterMeshRendererComponentDrawable(RendererId id);
+    	void DeregisterMeshRendererComponentDrawable(ECS::MeshRendererComponent& mrc);
 
         void Shutdown();
 
     private:
 
         void CreateImGuiFontDescriptorHeap();
-
-        void InitDrawableDenseHashMap();
 
     private:
         Core::Window const *m_Window{nullptr};
@@ -139,11 +133,6 @@ namespace acc3d::Graphics
 
         PresentMethod m_PresentMethod{true};
 
-        google::dense_hash_map<RendererId, Drawable*> m_DrawableMap;
-        // This should be atomically increased as we generate a renderer id, that is when we switch to a
-        // multi-threaded renderer architecture
-    	RendererId m_RendererIdValue = 2;
-
         size_t mutable m_FrameDrawCallCount = 0;
 /*-----------------------------------------------------------------*/
 
@@ -153,11 +142,23 @@ namespace acc3d::Graphics
 /*---------------------MEMORY MANAGEMENT---------------------------*/
         D3D12MA::Allocator* m_Allocator = nullptr;
 
+        std::unique_ptr<Memory::DescriptorAllocator> m_CBV_UAV_SRVDescriptorAllocator;
+        std::unique_ptr<Memory::DescriptorAllocator> m_SamplerDescriptorAllocator;
+
+        // Main GPU visible descriptor heaps. These will basically get set very few times throughout the scene
+        // or the application.
+        std::unique_ptr<DescriptorHeap> m_MainDescriptorHeap;
+        std::unique_ptr<DescriptorHeap> m_SamplerDescriptorHeap;
+
+
 /*#################################################################*/
 
 /*-------------------------Dear ImGui------------------------------*/
 
         ID3D12DescriptorHeap* m_ImGuiFontDescriptorHeap = nullptr;
+
+        Memory::DescriptorAllocation m_ImGuiFontAtlasDescriptorAllocation{};
+
 
 /*#################################################################*/
 

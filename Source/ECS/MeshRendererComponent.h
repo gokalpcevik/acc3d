@@ -11,13 +11,12 @@ namespace acc3d
 	namespace Graphics
 	{
 		class Renderer;
+        struct Drawable;
 	}
 }
 
 namespace acc3d::ECS
 {
-    class RIDAccessor;
-
     struct MeshRendererComponent
     {
         MeshRendererComponent(Asset::MeshAssetId id, Graphics::RootSignatureInitializer rootSignatureDescription)
@@ -29,23 +28,9 @@ namespace acc3d::ECS
 
     	uint32_t Color = 0xFFFF00F0;
     private:
-        Graphics::RendererId RendererId = 0;
-        friend class RIDAccessor;
-    };
+        Graphics::Drawable* Drawable = nullptr;
 
-    class RIDAccessor
-    {
-	    Graphics::RendererId const& operator()(MeshRendererComponent const& mrc) const
-        {
-            return mrc.RendererId;
-        }
-
-        Graphics::RendererId& operator()(MeshRendererComponent& mrc) const
-        {
-            return mrc.RendererId;
-        }
-
-        friend class Scene;
         friend class Graphics::Renderer;
     };
+
 } //

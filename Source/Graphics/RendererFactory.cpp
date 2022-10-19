@@ -62,6 +62,10 @@ namespace acc3d::Graphics
                 DescriptorHeap::CreateDescriptorHeapsForSwapChainBuffers(
                         pDevice->GetD3D12DevicePtr()) ;
 
+        auto& mainDHA = std::make_unique<Memory::DescriptorAllocator>(pDevice->GetD3D12DevicePtr(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 512);
+        auto& samplerDHA = std::make_unique<Memory::DescriptorAllocator>(pDevice->GetD3D12DevicePtr(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 256);
+
+
         auto pLightContext = std::make_unique<LightContext>();
         pLightContext->Populate(pDevice->GetD3D12DevicePtr(),pAllocator);
 
@@ -98,8 +102,6 @@ namespace acc3d::Graphics
                 pRenderer->m_GfxCmdAllocators[pRenderer->m_CurrentBackBufferIndex]->GetD3D12CommandAllocatorPtr(),
                 D3D12_COMMAND_LIST_TYPE_DIRECT,
                 nullptr);
-
-        pRenderer->InitDrawableDenseHashMap();
 
         ShaderLibrary::Init();
         RootSignatureLibrary::Init();
