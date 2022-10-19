@@ -61,6 +61,7 @@ namespace acc3d::Graphics::Memory
 		m_NumFreeHandles -= size;
 		return DescriptorAllocation{
 			CD3DX12_CPU_DESCRIPTOR_HANDLE(m_BaseCPUDescriptorHandle,Offset,m_DescriptorHandleIncrementSize),
+			m_DescriptorHeapType,
 			static_cast<UINT>(Offset),
 			static_cast<UINT>(size) * m_DescriptorHandleIncrementSize,
 			static_cast<UINT>(size),

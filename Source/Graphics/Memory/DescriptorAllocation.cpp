@@ -5,12 +5,14 @@
 namespace acc3d::Graphics::Memory
 {
 	DescriptorAllocation::DescriptorAllocation(D3D12_CPU_DESCRIPTOR_HANDLE handle,
+		D3D12_DESCRIPTOR_HEAP_TYPE type,
 		UINT offsetFromBase,
 		UINT sizeInBytes,
 		UINT numHandles,
 		DescriptorAllocatorPage* pOwningPage)
 			:
 	m_BaseCPUDescriptorHandle(handle),
+	m_DescriptorHeapType(type),
 	m_OffsetFromBase(offsetFromBase),
 	m_NumHandles(numHandles),
 	m_SizeInBytes(sizeInBytes),

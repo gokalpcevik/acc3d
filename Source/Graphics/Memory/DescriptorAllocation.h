@@ -17,6 +17,7 @@ namespace acc3d::Graphics::Memory
 	public:
 		DescriptorAllocation() = default;
 		DescriptorAllocation(D3D12_CPU_DESCRIPTOR_HANDLE handle,
+			D3D12_DESCRIPTOR_HEAP_TYPE type,
 			UINT offsetFromBase,
 			UINT sizeInBytes,
 			UINT numHandles,
@@ -32,6 +33,7 @@ namespace acc3d::Graphics::Memory
 		[[nodiscard]] DescriptorAllocatorPage* GetOwningPage() const { return m_OwningPage; }
 	private:
 		D3D12_CPU_DESCRIPTOR_HANDLE m_BaseCPUDescriptorHandle{};
+		D3D12_DESCRIPTOR_HEAP_TYPE m_DescriptorHeapType{};
 		UINT m_OffsetFromBase = 0;
 		UINT m_SizeInBytes = 0;
 		UINT m_NumHandles = 0;

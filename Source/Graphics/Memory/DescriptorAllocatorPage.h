@@ -51,7 +51,7 @@ namespace acc3d::Graphics::Memory
 		 */
 		void ReleaseStaleDescriptors(uint64_t frameNumber);
 	private:
-		uint32_t ComputeOffset(D3D12_CPU_DESCRIPTOR_HANDLE handle) const;
+		[[nodiscard]] uint32_t ComputeOffset(D3D12_CPU_DESCRIPTOR_HANDLE handle) const;
 
 		void AddNewBlock(OffsetType offset, OffsetType size);
 
