@@ -10,7 +10,6 @@
 #include "../ECS/Scene.h"
 #include "../ECS/Entity.h"
 #include "../Graphics/Material.h"
-#include "../Graphics/Memory/DescriptorAllocator.h"
 
 namespace acc3d::Core
 {
@@ -34,12 +33,12 @@ namespace acc3d::Core
         static auto Get() -> Application &;
 
         auto Start() -> int32_t;
-        auto GetRenderer() const->std::unique_ptr<Graphics::Renderer> const& { return m_Renderer; }
+
     private:
         auto Update() -> int32_t;
         void HandleWindowEvent(Uint32 type);
         void CalculateAppStats();
-        void DrawStatsAndSettings();
+        void DrawApplicationStats();
 
     private:
         AppStats m_Stats{};
@@ -57,7 +56,7 @@ namespace acc3d::Core
 
         ECS::Entity m_Camera;
         ECS::Entity m_Light;
+
         Eigen::Vector2i m_PrevCursorPosition { 0.0f, 0.0f};
-        float m_RendererClearColor[4] = {0.15f,0.15f,0.15f,1.0f};
     };
 }

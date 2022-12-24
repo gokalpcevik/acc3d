@@ -146,7 +146,6 @@ namespace acc3d::Graphics
 			auto const entity = lightView[i];
 			auto entry = scene.GetComponent<ECS::DirectionalLightComponent>(entity);
 			m_LightContext->SetLightEntry(entry, m_CurrentBackBufferIndex, i);
-			
 		}
 
 
@@ -159,6 +158,15 @@ namespace acc3d::Graphics
 		const auto lightGPUHandle = m_LightContext->GetDescriptorHeap(m_CurrentBackBufferIndex)->
 		                                            GetD3D12DescriptorHeapPtr()->GetGPUDescriptorHandleForHeapStart();
 
+		/*
+		 * Testing for the dynamic descriptor heap manager
+		 */
+
+		const auto lightCPUHandle = m_LightContext->m_LightDescriptorAllocation.GetBaseCPUDescriptorHandle();
+
+
+		
+
 		RootSignature const* pRootSignature = RootSignatureLibrary::Get(static_cast<RootSignatureId>(ROOT_SIG_ENTRY_VALUE::DIFFUSE_ROOT_SIGNATURE));
 		gfxCmdList->SetGraphicsRootSignature(pRootSignature->GetD3D12RootSignaturePtr());
 		
@@ -167,6 +175,7 @@ namespace acc3d::Graphics
 
 		gfxCmdList->SetGraphicsRootDescriptorTable(0UL, lightGPUHandle);
 
+		
 		const auto meshRenderView = scene.GetEnTTRegistryMutable().view<ECS::MeshRendererComponent, ECS::TransformComponent>();
 
 		for (const auto entity : meshRenderView)
@@ -384,7 +393,7 @@ namespace acc3d::Graphics
 		optimizedClearValue.DepthStencil = { 1.0f, 0 };
 
 		auto const depthBufferHeapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
-		auto const depthBufferResourceDescription = CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_D32_FLOAT, 1600, 900, 1, 0, 1, 0,
+		auto const depthBufferResourceDescription = CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_D32_FLOAT, width, height, 1, 0, 1, 0,
 		                                                          D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
 
 		D3D12MA::ALLOCATION_DESC allocationDesc;

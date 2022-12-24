@@ -1,5 +1,4 @@
 #include "Application.h"
-#include "../Graphics/Memory/DescriptorAllocatorPage.h"
 
 using namespace DirectX;
 
@@ -87,11 +86,6 @@ namespace acc3d::Core
         m_ViewportWidth = m_Window->GetSurfaceWidth();
         m_ViewportHeight = m_Window->GetSurfaceHeight();
 
-
-        using Graphics::Memory::DescriptorAllocator;
-
-        DescriptorAllocator* pAllocator = new DescriptorAllocator(m_Renderer->GetDevice()->GetD3D12DevicePtr(),
-                                                                  D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 256);
         return Update();
     }
 
@@ -99,8 +93,6 @@ namespace acc3d::Core
     {
         while (m_Running)
         {
-            static bool IsWindowHovered = false;
-
             this->CalculateAppStats();
 
             while (m_Window->PollEvents())
@@ -125,7 +117,7 @@ namespace acc3d::Core
             Vector2i DeltaCursorPos = CurrentCursorPos - m_PrevCursorPosition;
             m_PrevCursorPosition = CurrentCursorPos;
 
-        	if(Input::IsLeftMouseButtonPressed() && !IsWindowHovered)
+        	if(Input::IsLeftMouseButtonPressed())
         	{
                 float deltaAngleX = (2 * 3.14159f / static_cast<float>(m_ViewportWidth));
                 float xAngle = DeltaCursorPos[0] * deltaAngleX;
@@ -142,14 +134,15 @@ namespace acc3d::Core
             ImGui_ImplSDL2_NewFrame();
             ImGui::NewFrame();
 
-            this->DrawStatsAndSettings();
-            IsWindowHovered = ImGui::IsWindowFocused();
+            this->DrawApplicationStats();
+
         	ImGui::End();
 
         	ImGui::Render();
 
 
-            m_Renderer->Clear(m_RendererClearColor);
+            FLOAT constexpr clearColor[] = { 0.15f, 0.15f, 0.15f, 1.0f };
+            m_Renderer->Clear(clearColor);
             m_Renderer->RenderScene(*m_Scene);
             m_Renderer->RenderImGui();
             m_Renderer->Present();
@@ -194,48 +187,25 @@ namespace acc3d::Core
         m_Stats.m_LastTickCount = counter;
     }
 
-    void Application::DrawStatsAndSettings()
+    void Application::DrawApplicationStats()
     {
-        ImGui::Begin("Stats", 0,  
+        ImGui::Begin("Dummy", 0, ImGuiWindowFlags_NoBackground |
+            ImGuiWindowFlags_NoTitleBar |
             ImGuiWindowFlags_NoResize |
             ImGuiWindowFlags_NoMove |
-            ImGuiWindowFlags_NoSavedSettings);
+            ImGuiWindowFlags_NoSavedSettings |
+            ImGuiWindowFlags_NoInputs);
+
+        ImGui::Text("FPS: %0.1f", m_Stats.GetFramesPerSecond());
+        ImGui::Text("Frame Time: %0.1fms", m_Stats.GetFrameTime());
 
         auto const stats = m_Renderer->GetAllocatorStats();
-        if(ImGui::BeginTabBar("#ACC3D"))
-        {
-            if(ImGui::BeginTabItem("Statistics"))
-            {
-                ImGui::TextColored({ 0.76f,0.76f,1.0f,1.0f }, "Renderer");
-                ImGui::Text("FPS: %0.1f", m_Stats.GetFramesPerSecond());
-                ImGui::Text("Frame Time: %0.1f ms", m_Stats.GetFrameTime());
-                ImGui::Text("Draw Calls: %d", m_Renderer->GetFrameDrawCallCount());
-                ImGui::Text("Frame Number: %d", m_Renderer->GetFrameNumber());
-
-                ImGui::Separator();
-
-                ImGui::TextColored({ 0.76f,0.76f,1.0f,1.0f }, "D3DMA GPUOpen");
-                ImGui::Text("Allocation Count: %d", stats.Total.AllocationCount);
-                ImGui::Text("Allocations Total: %dMB", (stats.Total.UsedBytes + stats.Total.UnusedBytes) / 1024 / 1024);
-                ImGui::Text("Used Amount: %dMB", stats.Total.UsedBytes / 1024 / 1024);
-                ImGui::Text("Unused Amount: %dMB", stats.Total.UnusedBytes / 1024 / 1024);
-                ImGui::Text("Block Count: %d", stats.Total.BlockCount);
-                ImGui::EndTabItem();
-            }
-            if(ImGui::BeginTabItem("Settings"))
-            {
-                ImGui::ColorPicker4("Clear Color", m_RendererClearColor);
-
-                auto& dlc = m_Light.GetComponent<ECS::DirectionalLightComponent>();
-                ImGui::ColorPicker3("Light Color", (float*) & dlc.Color);
-                ImGui::SliderFloat("Light Intensity", &dlc.Intensity, 0.0f, 5.0f);
-
-
-                ImGui::EndTabItem();
-            }
-
-            ImGui::EndTabBar();
-        }
-    	ImGui::SetWindowPos(ImVec2(0.0f, 0.0f));
+        ImGui::Text("Draw Calls: %d", m_Renderer->GetFrameDrawCallCount());
+        ImGui::Text("Allocation Count: %d", stats.Total.AllocationCount);
+        ImGui::Text("Allocation Total Amount: %dMB", (stats.Total.UsedBytes + stats.Total.UnusedBytes) / 1024 / 1024);
+        ImGui::Text("Allocation Used Amount: %dMB", stats.Total.UsedBytes / 1024 / 1024);
+        ImGui::Text("Allocation Unused Amount: %dMB", stats.Total.UnusedBytes / 1024 / 1024);
+        ImGui::Text("Frame Number: %d", m_Renderer->GetFrameNumber());
+        ImGui::SetWindowPos(ImVec2(0.0f, 0.0f));
     }
 }

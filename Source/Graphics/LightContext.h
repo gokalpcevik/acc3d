@@ -35,6 +35,7 @@ namespace acc3d::Graphics
 		void SetLightEntriesDefault(size_t backBufferIndex) const;
 
 		[[nodiscard]] DescriptorHeap* GetDescriptorHeap(size_t backBufferIndex) const;
+		[[nodiscard]] Memory::DescriptorAllocation GetLightDescriptorAllocation() const;
 		[[nodiscard]] ID3D12Resource* GetResource(size_t backBufferIndex, size_t lightIndex) const;
 	public:
 		// should remove this soon

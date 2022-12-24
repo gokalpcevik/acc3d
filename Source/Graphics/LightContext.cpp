@@ -149,6 +149,11 @@ namespace acc3d::Graphics
 		return m_LightDescriptorHeaps[backBufferIndex].get();
 	}
 
+	Memory::DescriptorAllocation LightContext::GetLightDescriptorAllocation() const
+	{
+		return m_LightDescriptorAllocation;
+	}
+
 	ID3D12Resource* LightContext::GetResource(size_t backBufferIndex, size_t lightIndex) const
 	{
 		return m_LightBufferResourceAllocations[backBufferIndex][lightIndex]->GetResource();

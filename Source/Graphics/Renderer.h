@@ -147,9 +147,8 @@ namespace acc3d::Graphics
 
         // Main GPU visible descriptor heaps. These will basically get set very few times throughout the scene
         // or the application.
-        std::unique_ptr<DescriptorHeap> m_MainDescriptorHeap;
-        std::unique_ptr<DescriptorHeap> m_SamplerDescriptorHeap;
-
+        Memory::DescriptorAllocation m_MainDescriptorHeap;
+        Memory::DescriptorAllocation m_SamplerDescriptorHeap;
 
 /*#################################################################*/
 
